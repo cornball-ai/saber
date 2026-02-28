@@ -1,12 +1,15 @@
 #' @title Startup: discover project metadata and build unified ontology
-#' @description Scan home directory for CLAUDE.md, AGENT.md, and fyi.md files,
-#'   build a unified ontology index, and install Claude Code instructions.
+#' @description Scan home directory for project metadata, auto-register
+#'   projects as terms, infer relations from DESCRIPTION files, and install
+#'   Claude Code instructions.
 
 #' Build a unified ontology from project metadata files
 #'
-#' Scans for CLAUDE.md, AGENT.md, and fyi.md files across project directories,
-#' copies them into a staging vault, indexes them, and writes usage instructions
-#' to \code{~/.cache/claude/CLAUDE.md}.
+#' Scans for CLAUDE.md, AGENT.md, fyi.md, and DESCRIPTION files across
+#' project directories. Every project with recognized metadata becomes a
+#' term automatically. R package dependencies from DESCRIPTION files
+#' generate \code{uses} relations. Central annotation files from
+#' \code{~/.cache/basalt/annotations/} are included in the index.
 #'
 #' @param scan_dir Directory to scan for projects (default: home directory).
 #' @param db_dir Directory for the unified ontology database and staging vault
@@ -20,48 +23,118 @@ ont_startup <- function(scan_dir = path.expand("~"),
                         claude_dir = file.path(path.expand("~"), ".cache", "claude")) {
   scan_dir <- normalizePath(scan_dir, mustWork = TRUE)
   vault_dir <- file.path(db_dir, "vault")
+  annotations_dir <- file.path(db_dir, "annotations")
   dir.create(vault_dir, recursive = TRUE, showWarnings = FALSE)
 
-  # Discover metadata files one level deep
-  targets <- c("CLAUDE.md", "AGENT.md", "fyi.md")
+  # Discover project directories
   project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
 
-  found <- character(0L)
+  # Which files to look for
+  md_targets <- c("CLAUDE.md", "AGENT.md", "fyi.md")
+
+  # Gather metadata files and identify projects
+  found_md <- character(0L)
+  found_desc <- character(0L)
+  project_names <- character(0L)
+
   for (d in project_dirs) {
-    for (t in targets) {
+    has_metadata <- FALSE
+    for (t in md_targets) {
       fp <- file.path(d, t)
-      if (file.exists(fp)) found <- c(found, fp)
+      if (file.exists(fp)) {
+        found_md <- c(found_md, fp)
+        has_metadata <- TRUE
+      }
+    }
+    desc_fp <- file.path(d, "DESCRIPTION")
+    if (file.exists(desc_fp)) {
+      found_desc <- c(found_desc, desc_fp)
+      has_metadata <- TRUE
+    }
+    if (has_metadata) {
+      project_names <- c(project_names, basename(d))
     }
   }
 
-  if (length(found) == 0L) {
-    message("No CLAUDE.md, AGENT.md, or fyi.md files found in ", scan_dir)
+  if (length(project_names) == 0L) {
+    message("No project metadata found in ", scan_dir)
     return(invisible(NULL))
   }
 
-  message(sprintf("Found %d metadata file(s) across %d project(s)",
-                  length(found), length(unique(dirname(found)))))
+  message(sprintf("Found %d project(s) (%d markdown files, %d DESCRIPTION files)",
+                  length(project_names), length(found_md), length(found_desc)))
 
-  # Copy into staging vault with project-prefixed names to avoid collisions
-  # e.g. ~/cornball/CLAUDE.md -> vault/cornball--CLAUDE.md
+  # Clear old vault files
   old_files <- list.files(vault_dir, pattern = "\\.md$", full.names = TRUE)
   if (length(old_files) > 0L) file.remove(old_files)
 
-  for (fp in found) {
+  # Copy markdown files into staging vault
+  for (fp in found_md) {
     project <- basename(dirname(fp))
     filename <- basename(fp)
     dest <- file.path(vault_dir, paste0(project, "--", filename))
     file.copy(fp, dest, overwrite = TRUE)
   }
 
-  # Index the staging vault
+  # Copy central annotation files into vault
+  if (dir.exists(annotations_dir)) {
+    ann_files <- list.files(annotations_dir, pattern = "\\.md$",
+                            full.names = TRUE)
+    for (fp in ann_files) {
+      dest <- file.path(vault_dir, paste0("_annotations--", basename(fp)))
+      file.copy(fp, dest, overwrite = TRUE)
+    }
+  }
+
+  # Index the vault (picks up typed links from basalt.md and annotation files)
   ont_index(vault_dir)
+
+  # Now add auto-terms and DESCRIPTION relations directly to the DB
+  dbfile <- db_path(vault_dir)
+  con <- db_connect(dbfile)
+  on.exit(RSQLite::dbDisconnect(con))
+
+  # Auto-register every project as a term
+  for (pname in project_names) {
+    RSQLite::dbExecute(con,
+      "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
+       VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
+      params = list(pname, pname))
+  }
+
+  # Parse DESCRIPTION files for dependency relations
+  n_deps <- 0L
+  for (desc_fp in found_desc) {
+    info <- parse_description(desc_fp)
+    if (is.na(info$package)) next
+    pname <- basename(dirname(desc_fp))
+
+    for (dep in info$imports) {
+      RSQLite::dbExecute(con,
+        "INSERT OR IGNORE INTO relations
+           (subject_id, relation_type, object_id, confirmed, source)
+         VALUES (?, 'uses', ?, 1, 'auto')",
+        params = list(pname, dep))
+      # Ensure the dependency exists as a term
+      RSQLite::dbExecute(con,
+        "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
+         VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
+        params = list(dep, dep))
+      n_deps <- n_deps + 1L
+    }
+  }
+
+  # Resolve link targets (in case basalt.md files reference project names)
+  ensure_link_targets(con)
+
+  RSQLite::dbDisconnect(con)
+  on.exit(NULL)
 
   # Write Claude Code instructions
   write_claude_instructions(claude_dir, db_dir)
 
-  message("Ontology indexed. Instructions written to ",
-          file.path(claude_dir, "CLAUDE.md"))
+  message(sprintf("Indexed %d project(s), %d dependency relation(s). Instructions written to %s",
+                  length(project_names), n_deps, file.path(claude_dir, "CLAUDE.md")))
 
   invisible(ont_status(vault_path = vault_dir))
 }
@@ -76,13 +149,14 @@ write_claude_instructions <- function(claude_dir, db_dir) {
   outfile <- file.path(claude_dir, "CLAUDE.md")
 
   db_path <- file.path(db_dir, "vault", ".ontolite", "index.db")
+  vault_path <- file.path(db_dir, "vault")
 
   instructions <- c(
     "# basalt: Project Ontology",
     "",
-    "A unified ontology index built from CLAUDE.md, AGENT.md, and fyi.md files",
-    "across all projects. Use basalt to query relationships between projects,",
-    "packages, tools, and concepts.",
+    "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, and",
+    "DESCRIPTION files across all projects. Projects are auto-registered as",
+    "terms. R package dependencies are auto-inferred as `uses` relations.",
     "",
     "## Quick reference",
     "",
@@ -90,26 +164,43 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "library(basalt)",
     "",
     "# Check what's indexed",
-    "ont_status(db_path = \"~/.cache/basalt/vault/.ontolite/index.db\")",
+    sprintf("ont_status(db_path = \"%s\")", db_path),
     "",
     "# Query relationships",
-    sprintf("ont_query(\"term\", \"is_a\", \"ancestors\", db_path = \"%s\")", db_path),
-    sprintf("ont_query(\"term\", \"uses\", \"descendants\", db_path = \"%s\")", db_path),
+    sprintf("ont_query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")", db_path),
+    sprintf("ont_query(\"whisper\", \"uses\", \"ancestors\", db_path = \"%s\")", db_path),
     "",
     "# Rebuild the index after project changes",
     "ont_startup()",
     "```",
     "",
+    "## Adding terms and relations",
+    "",
+    "LLMs and users can bootstrap the ontology programmatically:",
+    "",
+    "```r",
+    "# Add terms",
+    sprintf("ont_add(terms = c(\"transformer\", \"attention\"), vault_path = \"%s\")", vault_path),
+    "",
+    "# Add relations",
+    "ont_add(",
+    "  relations = data.frame(",
+    "    subject = c(\"whisper\", \"transformer\"),",
+    "    relation_type = c(\"is_a\", \"uses\"),",
+    "    object = c(\"speech_to_text\", \"attention\")",
+    "  ),",
+    sprintf("  vault_path = \"%s\"", vault_path),
+    ")",
+    "```",
+    "",
+    "Additions are written to `~/.cache/basalt/annotations/` as markdown",
+    "files so they persist across re-indexes.",
+    "",
     "## Shell usage",
     "",
     "```bash",
-    "# Query from the command line",
-    sprintf("r -e 'basalt::ont_query(\"term\", \"is_a\", \"ancestors\", db_path = \"%s\")'", db_path),
-    "",
-    "# Rebuild the unified index",
+    sprintf("r -e 'basalt::ont_query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")'", db_path),
     "r -e 'basalt::ont_startup()'",
-    "",
-    "# Check index status",
     sprintf("r -e 'basalt::ont_status(db_path = \"%s\")'", db_path),
     "```",
     "",
@@ -118,36 +209,26 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "basalt can propose typed relations from untyped wikilinks:",
     "",
     "```r",
-    sprintf("ont_suggest(\"%s\")", file.path(db_dir, "vault")),
+    sprintf("ont_suggest(\"%s\")", vault_path),
     "```",
     "",
     "Suggestions are written to the database with `confirmed = FALSE`.",
     "Do NOT treat unconfirmed suggestions as facts. Troy reviews them.",
-    "When Troy confirms a suggestion, add the typed inline field to the",
-    "source markdown file and re-index.",
     "",
     "## Correction protocol",
     "",
     "When Troy corrects a relationship (e.g., \"that's not is_a, that's uses\"):",
     "",
-    "1. Edit the markdown file: change the inline field",
-    "2. Run `ont_index()` or `ont_startup()` to pick up the change",
+    "1. Edit the annotation file in ~/.cache/basalt/annotations/",
+    "2. Run `ont_startup()` to pick up the change",
     "3. Do NOT manually patch the SQLite database",
-    "",
-    "When Troy says a note shouldn't be a term:",
-    "",
-    "1. Remove `type: term` and `id:` from frontmatter if present",
-    "2. Re-index. The note drops out of the ontology.",
     "",
     "## Promoting terms",
     "",
-    "To assign a stable ID to a term:",
-    "",
     "```r",
-    sprintf("ont_promote(\"term_name\", \"%s\")", file.path(db_dir, "vault")),
+    sprintf("ont_promote(\"term_name\", \"%s\")", vault_path),
     "```",
     "",
-    "This writes `id: ONTO:NNNNNNN` into the file's frontmatter.",
     "Only do this when Troy asks. Never auto-promote.",
     "",
     "## OBO export",

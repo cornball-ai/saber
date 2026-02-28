@@ -22,11 +22,14 @@ ont_startup(
 An \code{ont_status} object (invisibly).
 }
 \description{
-Scan home directory for CLAUDE.md, AGENT.md, and fyi.md files,
-  build a unified ontology index, and install Claude Code instructions.
+Scan home directory for project metadata, auto-register
+  projects as terms, infer relations from DESCRIPTION files, and install
+  Claude Code instructions.
 Build a unified ontology from project metadata files
 
-Scans for CLAUDE.md, AGENT.md, and fyi.md files across project directories,
-copies them into a staging vault, indexes them, and writes usage instructions
-to \code{~/.cache/claude/CLAUDE.md}.
+Scans for CLAUDE.md, AGENT.md, fyi.md, and DESCRIPTION files across
+project directories. Every project with recognized metadata becomes a
+term automatically. R package dependencies from DESCRIPTION files
+generate \code{uses} relations. Central annotation files from
+\code{~/.cache/basalt/annotations/} are included in the index.
 }

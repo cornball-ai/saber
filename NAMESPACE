@@ -1,5 +1,6 @@
 # tinyrox says don't edit this manually, but it can't stop you!
 
+export(ont_add)
 export(ont_emit_obo)
 export(ont_index)
 export(ont_promote)
