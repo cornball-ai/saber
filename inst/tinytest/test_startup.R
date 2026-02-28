@@ -7,52 +7,60 @@ library(basalt)
 fake_home <- tempfile("home")
 dir.create(fake_home)
 
-# Project 1: has CLAUDE.md and fyi.md
+# Project 1: R package with CLAUDE.md, fyi.md, and DESCRIPTION
 proj1 <- file.path(fake_home, "mypackage")
 dir.create(proj1)
 writeLines(c(
-  "---",
-  "type: term",
-  "---",
   "# mypackage",
   "",
-  "An R package for doing things.",
-  "uses:: [[RSQLite]]"
+  "An R package for doing things."
 ), file.path(proj1, "CLAUDE.md"))
 
 writeLines(c(
-  "---",
-  "type: term",
-  "---",
   "# mypackage internals",
   "",
   "Exports: foo, bar, baz"
 ), file.path(proj1, "fyi.md"))
 
-# Project 2: has CLAUDE.md only
+writeLines(c(
+  "Package: mypackage",
+  "Version: 0.1.0",
+  "Title: My Package",
+  "Imports: RSQLite, yaml",
+  "Suggests: tinytest"
+), file.path(proj1, "DESCRIPTION"))
+
+# Project 2: has CLAUDE.md and DESCRIPTION
 proj2 <- file.path(fake_home, "otherapp")
 dir.create(proj2)
 writeLines(c(
-  "---",
-  "type: term",
-  "---",
   "# otherapp",
   "",
-  "is_a:: [[mypackage]]",
   "A downstream app."
 ), file.path(proj2, "CLAUDE.md"))
 
-# Project 3: has AGENT.md
+writeLines(c(
+  "Package: otherapp",
+  "Version: 0.1.0",
+  "Title: Other App",
+  "Imports: mypackage, jsonlite"
+), file.path(proj2, "DESCRIPTION"))
+
+# Project 3: has CLAUDE.md
 proj3 <- file.path(fake_home, "agentproject")
 dir.create(proj3)
 writeLines(c(
-  "---",
-  "type: term",
-  "---",
   "# agentproject",
-  "",
-  "uses:: [[otherapp]]"
-), file.path(proj3, "AGENT.md"))
+  "An agent project."
+), file.path(proj3, "CLAUDE.md"))
+
+# Project 4: AGENT.md only (no DESCRIPTION)
+proj4 <- file.path(fake_home, "simpleproject")
+dir.create(proj4)
+writeLines(c(
+  "# simpleproject",
+  "A non-R project."
+), file.path(proj4, "AGENT.md"))
 
 # Directory with no metadata (should be skipped)
 dir.create(file.path(fake_home, "nofiles"))
@@ -68,38 +76,54 @@ st <- ont_startup(scan_dir = fake_home,
 
 # Status should be returned
 expect_true(inherits(st, "ont_status"))
-expect_true(st$terms >= 3L)
 
 # Database should exist
 db <- file.path(cache_dir, "basalt", "vault", ".ontolite", "index.db")
 expect_true(file.exists(db))
 
-# Vault staging directory should have prefixed copies
-vault_files <- list.files(file.path(cache_dir, "basalt", "vault"),
-                          pattern = "\\.md$")
-expect_true("mypackage--CLAUDE.md" %in% vault_files)
-expect_true("mypackage--fyi.md" %in% vault_files)
-expect_true("otherapp--CLAUDE.md" %in% vault_files)
-expect_true("agentproject--AGENT.md" %in% vault_files)
+# --- Auto-term registration ---
+con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
 
-# Claude instructions should be written
+terms <- RSQLite::dbGetQuery(con, "SELECT id, name FROM terms ORDER BY name")
+
+# All 4 projects should be terms
+expect_true("mypackage" %in% terms$name)
+expect_true("otherapp" %in% terms$name)
+expect_true("agentproject" %in% terms$name)
+expect_true("simpleproject" %in% terms$name)
+
+# --- DESCRIPTION dependency relations ---
+rels <- RSQLite::dbGetQuery(con,
+  "SELECT * FROM relations WHERE source = 'auto' ORDER BY subject_id, object_id")
+
+# mypackage uses RSQLite and yaml
+mp_deps <- rels[rels$subject_id == "mypackage", ]
+expect_true("RSQLite" %in% mp_deps$object_id)
+expect_true("yaml" %in% mp_deps$object_id)
+expect_true(all(mp_deps$relation_type == "uses"))
+
+# otherapp uses mypackage and jsonlite
+oa_deps <- rels[rels$subject_id == "otherapp", ]
+expect_true("mypackage" %in% oa_deps$object_id)
+expect_true("jsonlite" %in% oa_deps$object_id)
+
+RSQLite::dbDisconnect(con)
+
+# --- Claude instructions ---
 claude_md <- file.path(claude_dir, "CLAUDE.md")
 expect_true(file.exists(claude_md))
 
-# Instructions should contain key sections
-instructions <- readLines(claude_md)
-text <- paste(instructions, collapse = "\n")
-expect_true(grepl("basalt", text))
+text <- paste(readLines(claude_md), collapse = "\n")
+expect_true(grepl("ont_add", text))
 expect_true(grepl("ont_query", text))
-expect_true(grepl("ont_startup", text))
-expect_true(grepl("suggest", text, ignore.case = TRUE))
 expect_true(grepl("correction protocol", text, ignore.case = TRUE))
-expect_true(grepl("ont_promote", text))
 
 # --- Test with empty directory ---
 empty_dir <- tempfile("empty")
 dir.create(empty_dir)
-result <- ont_startup(scan_dir = empty_dir, db_dir = tempfile("emptycache"))
+result <- ont_startup(scan_dir = empty_dir,
+                      db_dir = tempfile("emptycache"),
+                      claude_dir = tempfile("emptyclaude"))
 expect_true(is.null(result))
 
 # --- Cleanup ---

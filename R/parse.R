@@ -78,3 +78,37 @@ name_from_path <- function(filepath) {
 file_hash <- function(filepath) {
   tools::md5sum(filepath)[[1L]]
 }
+
+#' Parse an R package DESCRIPTION file
+#'
+#' Extracts Package name, Imports, and Suggests fields.
+#'
+#' @param filepath Path to a DESCRIPTION file.
+#' @return A list with components: package, imports, suggests (character vectors).
+#' @noRd
+parse_description <- function(filepath) {
+  dcf <- tryCatch(
+    read.dcf(filepath, fields = c("Package", "Imports", "Suggests")),
+    error = function(e) return(NULL)
+  )
+  if (is.null(dcf) || nrow(dcf) == 0L) {
+    return(list(package = NA_character_, imports = character(0L),
+                suggests = character(0L)))
+  }
+  pkg <- dcf[1L, "Package"]
+  imports <- parse_dcf_list(dcf[1L, "Imports"])
+  suggests <- parse_dcf_list(dcf[1L, "Suggests"])
+  list(package = pkg, imports = imports, suggests = suggests)
+}
+
+#' Parse a comma-separated DCF field into a clean character vector
+#' @noRd
+parse_dcf_list <- function(x) {
+  if (is.na(x) || nchar(trimws(x)) == 0L) return(character(0L))
+  parts <- strsplit(x, ",")[[1L]]
+  parts <- trimws(parts)
+  # Strip version constraints like (>= 1.0)
+  parts <- sub("\\s*\\(.*\\)", "", parts)
+  parts <- parts[nchar(parts) > 0L]
+  parts
+}
