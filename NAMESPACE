@@ -1,0 +1,10 @@
+# tinyrox says don't edit this manually, but it can't stop you!
+
+export(ont_emit_obo)
+export(ont_index)
+export(ont_promote)
+export(ont_query)
+export(ont_status)
+export(ont_suggest)
+
+S3method(print,ont_status)
