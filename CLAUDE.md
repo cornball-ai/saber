@@ -63,9 +63,9 @@ aliases:
 ### Typed relations (inline fields)
 
 ```markdown
-is_a:: [[Machine Learning Method]]
-part_of:: [[Artificial Intelligence]]
-uses:: [[Linear Model]]
+is_a:: [[dev_tooling]]
+part_of:: [[cornyverse]]
+uses:: [[RSQLite]]
 ```
 
 Dataview-style inline fields. The relation name is the key, the wikilink target is the value. These are the canonical typed edges.
