@@ -5,22 +5,26 @@
 
 #' Build a unified ontology from project metadata files
 #'
-#' Scans for CLAUDE.md, AGENT.md, fyi.md, and DESCRIPTION files across
-#' project directories. Every project with recognized metadata becomes a
-#' term automatically. R package dependencies from DESCRIPTION files
-#' generate \code{uses} relations. Central annotation files from
-#' \code{~/.cache/basalt/annotations/} are included in the index.
+#' Scans for CLAUDE.md, AGENT.md, fyi.md, README.md, and DESCRIPTION files
+#' across project directories. Also discovers Claude Code memory files from
+#' \code{~/.claude/projects/*/memory/*.md}. Every project with recognized
+#' metadata becomes a term automatically. R package dependencies from
+#' DESCRIPTION files generate \code{uses} relations. Central annotation
+#' files from \code{~/.cache/basalt/annotations/} are included in the index.
 #'
 #' @param scan_dir Directory to scan for projects (default: home directory).
 #' @param db_dir Directory for the unified ontology database and staging vault
 #'   (default: \code{~/.cache/basalt}).
 #' @param claude_dir Directory for Claude Code instructions file
 #'   (default: \code{~/.cache/claude}).
+#' @param memory_dir Directory containing Claude Code project memory files
+#'   (default: \code{~/.claude/projects}). Set to NULL to skip.
 #' @return An \code{ont_status} object (invisibly).
 #' @export
 ont_startup <- function(scan_dir = path.expand("~"),
                         db_dir = file.path(path.expand("~"), ".cache", "basalt"),
-                        claude_dir = file.path(path.expand("~"), ".cache", "claude")) {
+                        claude_dir = file.path(path.expand("~"), ".cache", "claude"),
+                        memory_dir = file.path(path.expand("~"), ".claude", "projects")) {
   scan_dir <- normalizePath(scan_dir, mustWork = TRUE)
   vault_dir <- file.path(db_dir, "vault")
   annotations_dir <- file.path(db_dir, "annotations")
@@ -30,7 +34,7 @@ ont_startup <- function(scan_dir = path.expand("~"),
   project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
 
   # Which files to look for
-  md_targets <- c("CLAUDE.md", "AGENT.md", "fyi.md")
+  md_targets <- c("CLAUDE.md", "AGENT.md", "fyi.md", "README.md")
 
   # Gather metadata files and identify projects
   found_md <- character(0L)
@@ -56,13 +60,28 @@ ont_startup <- function(scan_dir = path.expand("~"),
     }
   }
 
+  # Discover Claude Code memory files (~/.claude/projects/*/memory/*.md)
+  found_memories <- character(0L)
+  if (!is.null(memory_dir) && dir.exists(memory_dir)) {
+    mem_dirs <- list.dirs(memory_dir, recursive = FALSE,
+                          full.names = TRUE)
+    for (md in mem_dirs) {
+      mem_path <- file.path(md, "memory")
+      if (dir.exists(mem_path)) {
+        mfiles <- list.files(mem_path, pattern = "\\.md$", full.names = TRUE)
+        if (length(mfiles) > 0L) found_memories <- c(found_memories, mfiles)
+      }
+    }
+  }
+
   if (length(project_names) == 0L) {
     message("No project metadata found in ", scan_dir)
     return(invisible(NULL))
   }
 
-  message(sprintf("Found %d project(s) (%d markdown files, %d DESCRIPTION files)",
-                  length(project_names), length(found_md), length(found_desc)))
+  message(sprintf("Found %d project(s) (%d markdown, %d DESCRIPTION, %d memory files)",
+                  length(project_names), length(found_md), length(found_desc),
+                  length(found_memories)))
 
   # Clear old vault files
   old_files <- list.files(vault_dir, pattern = "\\.md$", full.names = TRUE)
@@ -73,6 +92,20 @@ ont_startup <- function(scan_dir = path.expand("~"),
     project <- basename(dirname(fp))
     filename <- basename(fp)
     dest <- file.path(vault_dir, paste0(project, "--", filename))
+    file.copy(fp, dest, overwrite = TRUE)
+  }
+
+  # Copy Claude Code memory files into vault
+  # Directory names are like -home-troy-whisper -> project "whisper"
+  for (fp in found_memories) {
+    mem_dir <- dirname(fp)           # .../memory
+    proj_dir <- dirname(mem_dir)     # .../-home-troy-whisper
+    proj_encoded <- basename(proj_dir)
+    # Extract project name: last segment after splitting on -home-troy-
+    proj_name <- sub("^.*-home-[^-]+-", "", proj_encoded)
+    filename <- basename(fp)
+    dest <- file.path(vault_dir,
+                      paste0("_memory--", proj_name, "--", filename))
     file.copy(fp, dest, overwrite = TRUE)
   }
 
@@ -154,9 +187,10 @@ write_claude_instructions <- function(claude_dir, db_dir) {
   instructions <- c(
     "# basalt: Project Ontology",
     "",
-    "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, and",
-    "DESCRIPTION files across all projects. Projects are auto-registered as",
-    "terms. R package dependencies are auto-inferred as `uses` relations.",
+    "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, README.md,",
+    "DESCRIPTION files, and Claude Code memory files across all projects.",
+    "Projects are auto-registered as terms. R package dependencies are",
+    "auto-inferred as `uses` relations.",
     "",
     "## Quick reference",
     "",

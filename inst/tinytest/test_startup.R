@@ -62,8 +62,27 @@ writeLines(c(
   "A non-R project."
 ), file.path(proj4, "AGENT.md"))
 
+# Project 5: README.md only
+proj5 <- file.path(fake_home, "readmeonly")
+dir.create(proj5)
+writeLines(c(
+  "# readmeonly",
+  "",
+  "A project with just a README."
+), file.path(proj5, "README.md"))
+
 # Directory with no metadata (should be skipped)
 dir.create(file.path(fake_home, "nofiles"))
+
+# Fake Claude Code memory directory
+fake_claude <- file.path(fake_home, ".claude", "projects",
+                         "-home-fakeuser-mypackage", "memory")
+dir.create(fake_claude, recursive = TRUE)
+writeLines(c(
+  "# Memory for mypackage",
+  "",
+  "Key insight: uses RSQLite for everything."
+), file.path(fake_claude, "MEMORY.md"))
 
 # --- Test ont_startup ---
 
@@ -72,7 +91,8 @@ claude_dir <- file.path(cache_dir, "claude")
 
 st <- ont_startup(scan_dir = fake_home,
                   db_dir = file.path(cache_dir, "basalt"),
-                  claude_dir = claude_dir)
+                  claude_dir = claude_dir,
+                  memory_dir = file.path(fake_home, ".claude", "projects"))
 
 # Status should be returned
 expect_true(inherits(st, "ont_status"))
@@ -86,11 +106,12 @@ con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
 
 terms <- RSQLite::dbGetQuery(con, "SELECT id, name FROM terms ORDER BY name")
 
-# All 4 projects should be terms
+# All 5 projects should be terms
 expect_true("mypackage" %in% terms$name)
 expect_true("otherapp" %in% terms$name)
 expect_true("agentproject" %in% terms$name)
 expect_true("simpleproject" %in% terms$name)
+expect_true("readmeonly" %in% terms$name)
 
 # --- DESCRIPTION dependency relations ---
 rels <- RSQLite::dbGetQuery(con,
@@ -109,6 +130,16 @@ expect_true("jsonlite" %in% oa_deps$object_id)
 
 RSQLite::dbDisconnect(con)
 
+# --- README.md should be in vault ---
+vault_files <- list.files(file.path(cache_dir, "basalt", "vault"),
+                          pattern = "\\.md$")
+expect_true("readmeonly--README.md" %in% vault_files)
+
+# --- Memory files should be in vault ---
+mem_files <- vault_files[grepl("^_memory--", vault_files)]
+expect_true(length(mem_files) >= 1L)
+expect_true(any(grepl("mypackage", mem_files)))
+
 # --- Claude instructions ---
 claude_md <- file.path(claude_dir, "CLAUDE.md")
 expect_true(file.exists(claude_md))
@@ -123,7 +154,8 @@ empty_dir <- tempfile("empty")
 dir.create(empty_dir)
 result <- ont_startup(scan_dir = empty_dir,
                       db_dir = tempfile("emptycache"),
-                      claude_dir = tempfile("emptyclaude"))
+                      claude_dir = tempfile("emptyclaude"),
+                      memory_dir = NULL)
 expect_true(is.null(result))
 
 # --- Cleanup ---

@@ -6,7 +6,8 @@
 ont_startup(
   scan_dir = path.expand("~"),
   db_dir = file.path(path.expand("~"), ".cache", "basalt"),
-  claude_dir = file.path(path.expand("~"), ".cache", "claude")
+  claude_dir = file.path(path.expand("~"), ".cache", "claude"),
+  memory_dir = file.path(path.expand("~"), ".claude", "projects")
 )
 }
 \arguments{
@@ -17,6 +18,9 @@ ont_startup(
 
 \item{claude_dir}{Directory for Claude Code instructions file
 (default: \code{~/.cache/claude}).}
+
+\item{memory_dir}{Directory containing Claude Code project memory files
+(default: \code{~/.claude/projects}). Set to NULL to skip.}
 }
 \value{
 An \code{ont_status} object (invisibly).
@@ -27,9 +31,10 @@ Scan home directory for project metadata, auto-register
   Claude Code instructions.
 Build a unified ontology from project metadata files
 
-Scans for CLAUDE.md, AGENT.md, fyi.md, and DESCRIPTION files across
-project directories. Every project with recognized metadata becomes a
-term automatically. R package dependencies from DESCRIPTION files
-generate \code{uses} relations. Central annotation files from
-\code{~/.cache/basalt/annotations/} are included in the index.
+Scans for CLAUDE.md, AGENT.md, fyi.md, README.md, and DESCRIPTION files
+across project directories. Also discovers Claude Code memory files from
+\code{~/.claude/projects/*/memory/*.md}. Every project with recognized
+metadata becomes a term automatically. R package dependencies from
+DESCRIPTION files generate \code{uses} relations. Central annotation
+files from \code{~/.cache/basalt/annotations/} are included in the index.
 }
