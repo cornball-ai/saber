@@ -7,18 +7,17 @@
 #' @return A list with frontmatter fields, or an empty list if none found.
 #' @noRd
 parse_frontmatter <- function(filepath) {
-  lines <- readLines(filepath, warn = FALSE)
-  if (length(lines) < 2L || trimws(lines[1L]) != "---") {
-    return(list())
-  }
-  end <- which(trimws(lines[-1L]) == "---")[1L]
-  if (is.na(end)) return(list())
-  end <- end + 1L
-  yaml_text <- paste(lines[2L:(end - 1L)], collapse = "\n")
-  tryCatch(
-    yaml::yaml.load(yaml_text),
-    error = function(e) list()
-  )
+    lines <- readLines(filepath, warn = FALSE)
+    if (length(lines) < 2L || trimws(lines[1L]) != "---") {
+        return(list())
+    }
+    end <- which(trimws(lines[-1L]) == "---")[1L]
+    if (is.na(end)) {
+        return(list())
+    }
+    end <- end + 1L
+    yaml_text <- paste(lines[2L:(end - 1L)], collapse = "\n")
+    tryCatch(yaml::yaml.load(yaml_text), error = function(e) list())
 }
 
 #' Parse typed relations (inline fields) from a markdown file
@@ -30,22 +29,17 @@ parse_frontmatter <- function(filepath) {
 #' @return A data.frame with columns: relation_type, target.
 #' @noRd
 parse_typed_links <- function(filepath) {
-  lines <- readLines(filepath, warn = FALSE)
-  pattern <- "^([a-z_]+)::\\s*\\[\\[([^]]+)\\]\\]"
-  matches <- regmatches(lines, regexec(pattern, lines))
-  matches <- matches[vapply(matches, length, integer(1L)) > 0L]
-  if (length(matches) == 0L) {
-    return(data.frame(
-      relation_type = character(0L),
-      target = character(0L),
-      stringsAsFactors = FALSE
-    ))
-  }
-  data.frame(
-    relation_type = vapply(matches, `[`, character(1L), 2L),
-    target = vapply(matches, `[`, character(1L), 3L),
-    stringsAsFactors = FALSE
-  )
+    lines <- readLines(filepath, warn = FALSE)
+    pattern <- "^([a-z_]+)::\\s*\\[\\[([^]]+)\\]\\]"
+    matches <- regmatches(lines, regexec(pattern, lines))
+    matches <- matches[vapply(matches, length, integer(1L)) > 0L]
+    if (length(matches) == 0L) {
+        return(data.frame(relation_type = character(0L),
+                          target = character(0L), stringsAsFactors = FALSE))
+    }
+    data.frame(relation_type = vapply(matches, `[`, character(1L), 2L),
+               target = vapply(matches, `[`, character(1L), 3L),
+               stringsAsFactors = FALSE)
 }
 
 #' Parse all wikilinks from a markdown file
@@ -54,11 +48,13 @@ parse_typed_links <- function(filepath) {
 #' @return Character vector of link targets.
 #' @noRd
 parse_wikilinks <- function(filepath) {
-  lines <- readLines(filepath, warn = FALSE)
-  all_links <- regmatches(lines, gregexpr("\\[\\[([^]]+)\\]\\]", lines))
-  all_links <- unlist(all_links)
-  if (length(all_links) == 0L) return(character(0L))
-  gsub("^\\[\\[|\\]\\]$", "", all_links)
+    lines <- readLines(filepath, warn = FALSE)
+    all_links <- regmatches(lines, gregexpr("\\[\\[([^]]+)\\]\\]", lines))
+    all_links <- unlist(all_links)
+    if (length(all_links) == 0L) {
+        return(character(0L))
+    }
+    gsub("^\\[\\[|\\]\\]$", "", all_links)
 }
 
 #' Derive the term name from a filepath
@@ -67,7 +63,7 @@ parse_wikilinks <- function(filepath) {
 #' @return The filename without extension, used as the term name.
 #' @noRd
 name_from_path <- function(filepath) {
-  tools::file_path_sans_ext(basename(filepath))
+    tools::file_path_sans_ext(basename(filepath))
 }
 
 #' Compute a file hash for change detection
@@ -76,7 +72,7 @@ name_from_path <- function(filepath) {
 #' @return MD5 hash as a hex string.
 #' @noRd
 file_hash <- function(filepath) {
-  tools::md5sum(filepath)[[1L]]
+    tools::md5sum(filepath)[[1L]]
 }
 
 #' Parse an R package DESCRIPTION file
@@ -87,28 +83,30 @@ file_hash <- function(filepath) {
 #' @return A list with components: package, imports, suggests (character vectors).
 #' @noRd
 parse_description <- function(filepath) {
-  dcf <- tryCatch(
-    read.dcf(filepath, fields = c("Package", "Imports", "Suggests")),
-    error = function(e) return(NULL)
-  )
-  if (is.null(dcf) || nrow(dcf) == 0L) {
-    return(list(package = NA_character_, imports = character(0L),
-                suggests = character(0L)))
-  }
-  pkg <- dcf[1L, "Package"]
-  imports <- parse_dcf_list(dcf[1L, "Imports"])
-  suggests <- parse_dcf_list(dcf[1L, "Suggests"])
-  list(package = pkg, imports = imports, suggests = suggests)
+    dcf <- tryCatch(read.dcf(filepath,
+                             fields = c("Package", "Imports", "Suggests")),
+                    error = function(e) return(NULL))
+    if (is.null(dcf) || nrow(dcf) == 0L) {
+        return(list(package = NA_character_, imports = character(0L),
+                    suggests = character(0L)))
+    }
+    pkg <- dcf[1L, "Package"]
+    imports <- parse_dcf_list(dcf[1L, "Imports"])
+    suggests <- parse_dcf_list(dcf[1L, "Suggests"])
+    list(package = pkg, imports = imports, suggests = suggests)
 }
 
 #' Parse a comma-separated DCF field into a clean character vector
 #' @noRd
 parse_dcf_list <- function(x) {
-  if (is.na(x) || nchar(trimws(x)) == 0L) return(character(0L))
-  parts <- strsplit(x, ",")[[1L]]
-  parts <- trimws(parts)
-  # Strip version constraints like (>= 1.0)
-  parts <- sub("\\s*\\(.*\\)", "", parts)
-  parts <- parts[nchar(parts) > 0L]
-  parts
+    if (is.na(x) || nchar(trimws(x)) == 0L) {
+        return(character(0L))
+    }
+    parts <- strsplit(x, ",")[[1L]]
+    parts <- trimws(parts)
+    # Strip version constraints like (>= 1.0)
+    parts <- sub("\\s*\\(.*\\)", "", parts)
+    parts <- parts[nchar(parts) > 0L]
+    parts
 }
+

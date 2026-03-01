@@ -4,8 +4,8 @@
 \title{Blast radius analysis}
 \usage{
 blast_radius(fn, project = NULL,
-             vault_path = file.path(path.expand("~"), ".cache", "basalt", "vault"),
-             cache_dir = file.path(path.expand("~"), ".cache", "basalt", "symbols"))
+             vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
+             cache_dir = file.path(tools::R_user_dir("basalt", "cache"), "symbols"))
 }
 \arguments{
 \item{fn}{Character. Function name to search for.}

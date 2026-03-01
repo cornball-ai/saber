@@ -4,7 +4,7 @@
 \title{AST symbol index}
 \usage{
 symbols(project_dir,
-        cache_dir = file.path(path.expand("~"), ".cache", "basalt", "symbols"))
+        cache_dir = file.path(tools::R_user_dir("basalt", "cache"), "symbols"))
 }
 \arguments{
 \item{project_dir}{Path to the project directory.}
