@@ -135,14 +135,17 @@ expect_true("jsonlite" %in% oa_deps$object_id)
 # --- No staging vault created ---
 expect_false(dir.exists(file.path(cache_dir, "basalt", "vault")))
 
-# --- Claude instructions ---
-claude_md <- file.path(claude_dir, "CLAUDE.md")
-expect_true(file.exists(claude_md))
+# --- Claude instructions generated in cache, not written to claude_dir ---
+instructions_md <- file.path(cache_dir, "basalt", "instructions.md")
+expect_true(file.exists(instructions_md))
 
-text <- paste(readLines(claude_md), collapse = "\n")
+text <- paste(readLines(instructions_md), collapse = "\n")
 expect_true(grepl("basalt::add", text))
 expect_true(grepl("basalt::query", text))
 expect_true(grepl("correction protocol", text, ignore.case = TRUE))
+
+# Should NOT write directly to claude_dir
+expect_false(file.exists(file.path(claude_dir, "CLAUDE.md")))
 
 # --- Test with empty directory ---
 empty_dir <- tempfile("empty")

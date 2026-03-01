@@ -14,8 +14,9 @@ startup(scan_dir = path.expand("~"),
 \item{cache_dir}{Directory for the ontology index and annotations
 (default: \code{tools::R_user_dir("basalt", "cache")}).}
 
-\item{claude_dir}{Directory for Claude Code instructions file.
-Set to NULL to skip writing instructions.}
+\item{claude_dir}{Directory where Claude Code reads its global CLAUDE.md.
+Used only to check if the instructions file needs updating. Set to NULL
+to suppress the copy hint. Nothing is written to this directory.}
 
 \item{memory_dir}{Directory containing Claude Code project memory files
 (default: \code{~/.claude/projects}). Set to NULL to skip.}

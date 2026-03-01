@@ -18,8 +18,9 @@
 #' @param scan_dir Directory to scan for projects (default: home directory).
 #' @param cache_dir Directory for the ontology index and annotations
 #'   (default: \code{tools::R_user_dir("basalt", "cache")}).
-#' @param claude_dir Directory for Claude Code instructions file.
-#'   Set to NULL to skip writing instructions.
+#' @param claude_dir Directory where Claude Code reads its global CLAUDE.md.
+#'   Used only to check if the instructions file needs updating. Set to NULL
+#'   to suppress the copy hint. Nothing is written to this directory.
 #' @param memory_dir Directory containing Claude Code project memory files
 #'   (default: \code{~/.claude/projects}). Set to NULL to skip.
 #' @return A \code{basalt_status} object (invisibly).
@@ -172,16 +173,23 @@ startup <- function(scan_dir = path.expand("~"),
 
     save_index(idx, index_path)
 
-    # Write Claude Code instructions
-    if (!is.null(claude_dir)) {
-        write_claude_instructions(claude_dir, index_path)
-    }
+    # Generate Claude Code instructions
+    instructions_file <- file.path(cache_dir, "instructions.md")
+    write_claude_instructions(instructions_file, index_path)
 
     message(sprintf("Indexed %d project(s), %d dependency relation(s).",
                     length(project_names), n_deps))
-    if (!is.null(claude_dir)) {
-        message(sprintf("Instructions written to %s",
-                        file.path(claude_dir, "CLAUDE.md")))
+
+    claude_target <- file.path(
+        if (!is.null(claude_dir)) claude_dir
+        else file.path(path.expand("~"), ".cache", "claude"),
+        "CLAUDE.md"
+    )
+    if (!file.exists(claude_target) ||
+        !identical(readLines(instructions_file, warn = FALSE),
+                   readLines(claude_target, warn = FALSE))) {
+        message("Instructions generated at: ", instructions_file)
+        message("To install: cp '", instructions_file, "' '", claude_target, "'")
     }
 
     invisible(status(vault_path = index_path))
@@ -218,12 +226,10 @@ startup_subject <- function(fp, scan_dir, memory_dir) {
 
 #' Write Claude Code usage instructions
 #'
-#' @param claude_dir Path to the Claude cache directory.
+#' @param outfile Path to write the instructions file.
 #' @param index_path Path to the directory containing the index TSV files.
 #' @noRd
-write_claude_instructions <- function(claude_dir, index_path) {
-    dir.create(claude_dir, recursive = TRUE, showWarnings = FALSE)
-    outfile <- file.path(claude_dir, "CLAUDE.md")
+write_claude_instructions <- function(outfile, index_path) {
 
     instructions <- c("# basalt: Project Ontology", "",
                       "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, README.md,", "DESCRIPTION files, and Claude Code memory files across all projects.",
