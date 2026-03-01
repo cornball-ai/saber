@@ -2,9 +2,9 @@
 
 ## What this is
 
-A small R package that maintains a live ontology from a markdown vault. You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
+A small R package that maintains a live ontology across projects. You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
 
-The vault (markdown files with frontmatter and typed links) is the source of truth. The TSV index is derived. Never edit the index directly — edit the markdown, then rebuild.
+Project files (CLAUDE.md, DESCRIPTION, etc.) are the source of truth — read in place, never copied. The TSV index at `~/.cache/R/basalt/index` is derived. Never edit the index directly — edit the source files, then run `startup()`.
 
 This package is new and should evolve rapidly depending on how we end up using it. Don't be afraid to propose big changes depending on what's working.
 
@@ -17,13 +17,31 @@ This package is new and should evolve rapidly depending on how we end up using i
 - CRAN-viable.
 - Apache-2.0 license (consistent with cornyverse core packages).
 
+## Cache layout
+
+All derived data lives under `tools::R_user_dir("basalt", "cache")` (`~/.cache/R/basalt/`):
+
+```
+~/.cache/R/basalt/
+  index/.ontolite/   — terms.tsv, relations.tsv, files.tsv
+  instructions.md    — generated Claude Code instructions (cp to ~/.cache/claude/CLAUDE.md)
+  symbols/           — per-project RDS caches from symbols()
+  annotations/       — persistent annotation files from add()
+  briefs/            — briefing/heartbeat output
+  hubs/              — feature hub markdown files
+```
+
+basalt never writes outside this directory. After `startup()`, it prints a `cp` command if `~/.cache/claude/CLAUDE.md` needs updating.
+
 ## How you use this package
 
 Shell into R:
 
 ```
-r -e 'basalt::query("neural_networks", "is_a", "ancestors", vault_path = "~/.cache/basalt/vault")'
+r -e 'basalt::query("neural_networks", "is_a", "ancestors")'
 ```
+
+All functions default to the standard cache path — no need to pass `vault_path` in normal use.
 
 Use the query results to build context, pick retrieval targets, expand search terms to descendants, or verify relationships before asserting them in conversation.
 
@@ -40,7 +58,7 @@ Use the query results to build context, pick retrieval targets, expand search te
 | `emit_obo(vault_path, outfile)` | Snapshot the current ontology to OBO format |
 | `status(vault_path)` | Summary stats: term count, relation count, unconfirmed suggestions |
 | `add(terms, relations)` | Bulk-insert terms and relations programmatically |
-| `startup()` | Scan projects, build unified ontology, write Claude instructions |
+| `startup()` | Scan projects, build unified ontology, generate instructions file |
 | `briefing(project)` | Generate per-project context briefing |
 | `heartbeat()` | Weekly cross-project activity summary |
 
@@ -109,7 +127,7 @@ Everything else is just a note.
 
 ## Index format
 
-Three TSV files in `{vault_path}/.ontolite/`:
+Three TSV files in `~/.cache/R/basalt/index/.ontolite/`:
 - `terms.tsv` — id, name, filepath, aliases (pipe-separated), promoted (0/1), updated_at
 - `relations.tsv` — subject_id, relation_type, object_id, confirmed (0/1), source (inline|suggested|manual|auto)
 - `files.tsv` — filepath, hash, parsed_at (for incremental rebuild)
@@ -133,13 +151,13 @@ The prefix is configurable, default `ONTO`. This is a deliberate action, not aut
 
 Suggestions are written to `relations.tsv` with `confirmed = 0` and `source = 'suggested'`. Troy reviews them. You do NOT treat unconfirmed suggestions as facts.
 
-When Troy confirms: he either adds the typed inline field to the markdown (source of truth) and re-indexes, or tells you to do it.
+When Troy confirms: he either adds the typed inline field to the source file and runs `startup()`, or tells you to do it.
 
 ## Correction protocol
 
 When Troy says something like "that's not is_a, that's uses":
-1. Edit the markdown file: change the inline field
-2. Run `index_vault()` to pick up the change
+1. Edit the source file: change the inline field
+2. Run `startup()` to pick up the change
 3. Do NOT manually patch the index files
 
 When Troy says "that note shouldn't be a term":
@@ -151,7 +169,7 @@ When Troy says "that note shouldn't be a term":
 `query()` returns a data.frame. When you're calling from the command line, print it as TSV for easy parsing:
 
 ```r
-res <- basalt::query("neural_networks", "is_a", "ancestors", vault_path = "~/.cache/basalt/vault")
+res <- basalt::query("neural_networks", "is_a", "ancestors")
 write.table(res, stdout(), sep = "\t", row.names = FALSE, quote = FALSE)
 ```
 
