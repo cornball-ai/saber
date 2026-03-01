@@ -4,8 +4,8 @@
 \title{Weekly heartbeat}
 \usage{
 heartbeat(scan_dir = path.expand("~"),
-          briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
-          annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"),
+          briefs_dir = file.path(tools::R_user_dir("basalt", "cache"), "briefs"),
+          annotations_dir = file.path(tools::R_user_dir("basalt", "cache"), "annotations"),
           days = 7L)
 }
 \arguments{

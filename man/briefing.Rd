@@ -4,8 +4,8 @@
 \title{Project briefing}
 \usage{
 briefing(project = NULL,
-         vault_path = file.path(path.expand("~"), ".cache", "basalt", "vault"),
-         briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
+         vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
+         briefs_dir = file.path(tools::R_user_dir("basalt", "cache"), "briefs"),
          memory_base = file.path(path.expand("~"), ".claude", "projects"),
          scan_dir = path.expand("~"), max_memory_lines = 30L)
 }

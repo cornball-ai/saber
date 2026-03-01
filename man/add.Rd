@@ -4,7 +4,7 @@
 \title{Add terms and relations programmatically}
 \usage{
 add(terms = NULL, relations = NULL, vault_path = NULL,
-    annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"))
+    annotations_dir = file.path(tools::R_user_dir("basalt", "cache"), "annotations"))
 }
 \arguments{
 \item{terms}{Character vector of term names to add.}

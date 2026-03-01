@@ -13,7 +13,8 @@ dir.create(proj1)
 writeLines(c(
   "# mypackage",
   "",
-  "An R package for doing things."
+  "An R package for doing things.",
+  "is_a:: [[r_package]]"
 ), file.path(proj1, "CLAUDE.md"))
 
 writeLines(c(
@@ -90,19 +91,19 @@ cache_dir <- tempfile("cache")
 claude_dir <- file.path(cache_dir, "claude")
 
 st <- startup(scan_dir = fake_home,
-                  db_dir = file.path(cache_dir, "basalt"),
-                  claude_dir = claude_dir,
-                  memory_dir = file.path(fake_home, ".claude", "projects"))
+              cache_dir = file.path(cache_dir, "basalt"),
+              claude_dir = claude_dir,
+              memory_dir = file.path(fake_home, ".claude", "projects"))
 
 # Status should be returned
 expect_true(inherits(st, "basalt_status"))
 
 # Index directory should exist
-idx_dir <- file.path(cache_dir, "basalt", "vault", ".ontolite")
+idx_dir <- file.path(cache_dir, "basalt", "index", ".ontolite")
 expect_true(dir.exists(idx_dir))
 
 # --- Auto-term registration ---
-idx <- basalt:::load_index(file.path(cache_dir, "basalt", "vault"))
+idx <- basalt:::load_index(file.path(cache_dir, "basalt", "index"))
 
 # All 5 projects should be terms
 expect_true("mypackage" %in% idx$terms$name)
@@ -110,6 +111,12 @@ expect_true("otherapp" %in% idx$terms$name)
 expect_true("agentproject" %in% idx$terms$name)
 expect_true("simpleproject" %in% idx$terms$name)
 expect_true("readmeonly" %in% idx$terms$name)
+
+# --- Typed links from CLAUDE.md parsed in place ---
+inline_rels <- idx$relations[idx$relations$source == "inline", , drop = FALSE]
+expect_true(any(inline_rels$subject_id == "mypackage" &
+                inline_rels$relation_type == "is_a" &
+                inline_rels$object_id == "r_package"))
 
 # --- DESCRIPTION dependency relations ---
 auto_rels <- idx$relations[idx$relations$source == "auto", , drop = FALSE]
@@ -125,15 +132,8 @@ oa_deps <- auto_rels[auto_rels$subject_id == "otherapp", ]
 expect_true("mypackage" %in% oa_deps$object_id)
 expect_true("jsonlite" %in% oa_deps$object_id)
 
-# --- README.md should be in vault ---
-vault_files <- list.files(file.path(cache_dir, "basalt", "vault"),
-                          pattern = "\\.md$")
-expect_true("readmeonly--README.md" %in% vault_files)
-
-# --- Memory files should be in vault ---
-mem_files <- vault_files[grepl("^_memory--", vault_files)]
-expect_true(length(mem_files) >= 1L)
-expect_true(any(grepl("mypackage", mem_files)))
+# --- No staging vault created ---
+expect_false(dir.exists(file.path(cache_dir, "basalt", "vault")))
 
 # --- Claude instructions ---
 claude_md <- file.path(claude_dir, "CLAUDE.md")
@@ -148,9 +148,9 @@ expect_true(grepl("correction protocol", text, ignore.case = TRUE))
 empty_dir <- tempfile("empty")
 dir.create(empty_dir)
 result <- startup(scan_dir = empty_dir,
-                      db_dir = tempfile("emptycache"),
-                      claude_dir = tempfile("emptyclaude"),
-                      memory_dir = NULL)
+                  cache_dir = tempfile("emptycache"),
+                  claude_dir = NULL,
+                  memory_dir = NULL)
 expect_true(is.null(result))
 
 # --- Cleanup ---

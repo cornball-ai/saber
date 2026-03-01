@@ -10,39 +10,39 @@
 #' @return A list with class \code{basalt_status}.
 #' @export
 status <- function(vault_path = NULL) {
-  if (is.null(vault_path)) stop("vault_path must be provided.")
-  idx <- load_index(vault_path)
+    if (is.null(vault_path)) {
+        stop("vault_path must be provided.")
+    }
+    idx <- load_index(vault_path)
 
-  confirmed <- idx$relations[idx$relations$confirmed == 1L, , drop = FALSE]
-  suggested <- idx$relations[idx$relations$confirmed == 0L, , drop = FALSE]
+    confirmed <- idx$relations[idx$relations$confirmed == 1L,, drop = FALSE]
+    suggested <- idx$relations[idx$relations$confirmed == 0L,, drop = FALSE]
 
-  rel_types <- as.data.frame(table(confirmed$relation_type),
-                             stringsAsFactors = FALSE)
-  names(rel_types) <- c("relation_type", "n")
+    rel_types <- as.data.frame(table(confirmed$relation_type),
+                               stringsAsFactors = FALSE)
+    names(rel_types) <- c("relation_type", "n")
 
-  result <- list(
-    terms = nrow(idx$terms),
-    promoted = sum(idx$terms$promoted == 1L),
-    relations = nrow(confirmed),
-    suggestions = nrow(suggested),
-    relation_types = rel_types
-  )
-  class(result) <- "basalt_status"
-  result
+    result <- list(terms = nrow(idx$terms),
+                   promoted = sum(idx$terms$promoted == 1L),
+                   relations = nrow(confirmed), suggestions = nrow(suggested),
+                   relation_types = rel_types)
+    class(result) <- "basalt_status"
+    result
 }
 
 #' @export
 print.basalt_status <- function(x, ...) {
-  cat("Ontology status:\n")
-  cat(sprintf("  Terms:       %d (%d promoted)\n", x$terms, x$promoted))
-  cat(sprintf("  Relations:   %d confirmed\n", x$relations))
-  cat(sprintf("  Suggestions: %d unconfirmed\n", x$suggestions))
-  if (nrow(x$relation_types) > 0L) {
-    cat("  By type:\n")
-    for (i in seq_len(nrow(x$relation_types))) {
-      cat(sprintf("    %s: %d\n", x$relation_types$relation_type[i],
-                  x$relation_types$n[i]))
+    cat("Ontology status:\n")
+    cat(sprintf("  Terms:       %d (%d promoted)\n", x$terms, x$promoted))
+    cat(sprintf("  Relations:   %d confirmed\n", x$relations))
+    cat(sprintf("  Suggestions: %d unconfirmed\n", x$suggestions))
+    if (nrow(x$relation_types) > 0L) {
+        cat("  By type:\n")
+        for (i in seq_len(nrow(x$relation_types))) {
+            cat(sprintf("    %s: %d\n", x$relation_types$relation_type[i],
+                        x$relation_types$n[i]))
+        }
     }
-  }
-  invisible(x)
+    invisible(x)
 }
+

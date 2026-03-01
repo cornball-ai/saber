@@ -4,18 +4,18 @@
 \title{Startup: discover project metadata and build unified ontology}
 \usage{
 startup(scan_dir = path.expand("~"),
-        db_dir = file.path(path.expand("~"), ".cache", "basalt"),
+        cache_dir = tools::R_user_dir("basalt", "cache"),
         claude_dir = file.path(path.expand("~"), ".cache", "claude"),
         memory_dir = file.path(path.expand("~"), ".claude", "projects"))
 }
 \arguments{
 \item{scan_dir}{Directory to scan for projects (default: home directory).}
 
-\item{db_dir}{Directory for the unified ontology and staging vault
-(default: \code{~/.cache/basalt}).}
+\item{cache_dir}{Directory for the ontology index and annotations
+(default: \code{tools::R_user_dir("basalt", "cache")}).}
 
-\item{claude_dir}{Directory for Claude Code instructions file
-(default: \code{~/.cache/claude}).}
+\item{claude_dir}{Directory for Claude Code instructions file.
+Set to NULL to skip writing instructions.}
 
 \item{memory_dir}{Directory containing Claude Code project memory files
 (default: \code{~/.claude/projects}). Set to NULL to skip.}
@@ -34,5 +34,8 @@ across project directories. Also discovers Claude Code memory files from
 \code{~/.claude/projects/*/memory/*.md}. Every project with recognized
 metadata becomes a term automatically. R package dependencies from
 DESCRIPTION files generate \code{uses} relations. Central annotation
-files from \code{~/.cache/basalt/annotations/} are included in the index.
+files from \code{annotations_dir} are parsed for typed links.
+
+Files are read in place — nothing is copied. The index (three TSV files)
+is written to \code{cache_dir}.
 }

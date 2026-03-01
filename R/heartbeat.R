@@ -15,101 +15,117 @@
 #' @return The heartbeat text (character string), returned invisibly.
 #' @export
 heartbeat <- function(scan_dir = path.expand("~"),
-                          briefs_dir = file.path(path.expand("~"),
-                                                 ".cache", "basalt", "briefs"),
-                          annotations_dir = file.path(path.expand("~"),
-                                                      ".cache", "basalt",
-                                                      "annotations"),
-                          days = 7L) {
-  dir.create(briefs_dir, recursive = TRUE, showWarnings = FALSE)
+                      briefs_dir = file.path(tools::R_user_dir("basalt", "cache"), "briefs"),
+                      annotations_dir = file.path(tools::R_user_dir("basalt", "cache"),
+        "annotations"),
+                      days = 7L) {
+    dir.create(briefs_dir, recursive = TRUE, showWarnings = FALSE)
 
-  lines <- c(
-    "# Heartbeat",
-    sprintf("_Generated %s (last %d days)_",
-            format(Sys.time(), "%Y-%m-%d %H:%M"), days),
-    ""
-  )
+    lines <- c("# Heartbeat",
+               sprintf("_Generated %s (last %d days)_",
+                       format(Sys.time(), "%Y-%m-%d %H:%M"), days), "")
 
-  # --- Git activity across projects ---
-  git_lines <- heartbeat_git(scan_dir, days)
-  if (length(git_lines) > 0L) lines <- c(lines, git_lines, "")
+    # --- Git activity across projects ---
+    git_lines <- heartbeat_git(scan_dir, days)
+    if (length(git_lines) > 0L) {
+        lines <- c(lines, git_lines, "")
+    }
 
-  # --- Recent annotations ---
-  ann_lines <- heartbeat_annotations(annotations_dir, days)
-  if (length(ann_lines) > 0L) lines <- c(lines, ann_lines, "")
+    # --- Recent annotations ---
+    ann_lines <- heartbeat_annotations(annotations_dir, days)
+    if (length(ann_lines) > 0L) {
+        lines <- c(lines, ann_lines, "")
+    }
 
-  text <- paste(lines, collapse = "\n")
+    text <- paste(lines, collapse = "\n")
 
-  outfile <- file.path(briefs_dir, "_heartbeat.md")
-  writeLines(lines, outfile)
+    outfile <- file.path(briefs_dir, "_heartbeat.md")
+    writeLines(lines, outfile)
 
-  invisible(text)
+    invisible(text)
 }
 
 #' Git activity across projects
 #' @noRd
 heartbeat_git <- function(scan_dir, days) {
-  project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
-  since_arg <- sprintf("--since='%d days ago'", days)
+    project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
+    since_arg <- sprintf("--since='%d days ago'", days)
 
-  activity <- list()
-  for (d in project_dirs) {
-    if (!dir.exists(file.path(d, ".git"))) next
-    log <- tryCatch(
-      system2("git", c("-C", d, "log", "--oneline", since_arg),
-              stdout = TRUE, stderr = FALSE),
-      error = function(e) character(0L)
-    )
-    if (length(log) > 0L) {
-      activity[[basename(d)]] <- log
+    activity <- list()
+    for (d in project_dirs) {
+        if (!dir.exists(file.path(d, ".git"))) {
+            next
+        }
+        log <- tryCatch(system2("git",
+                                c("-C", d, "log", "--oneline", since_arg),
+                                stdout = TRUE, stderr = FALSE),
+                        error = function(e) character(0L))
+        if (length(log) > 0L) {
+            activity[[basename(d)]] <- log
+        }
     }
-  }
 
-  if (length(activity) == 0L) return(character(0L))
-
-  # Sort by most commits
-  counts <- vapply(activity, length, integer(1L))
-  activity <- activity[order(counts, decreasing = TRUE)]
-
-  lines <- "## This week's commits"
-  for (proj in names(activity)) {
-    commits <- activity[[proj]]
-    n <- length(commits)
-    # Show count and most recent 3
-    lines <- c(lines, sprintf("### %s (%d commit%s)", proj, n,
-                              if (n == 1L) "" else "s"))
-    show <- if (n > 3L) commits[1:3] else commits
-    for (c in show) {
-      lines <- c(lines, sprintf("- %s", c))
+    if (length(activity) == 0L) {
+        return(character(0L))
     }
-    if (n > 3L) {
-      lines <- c(lines, sprintf("- _... +%d more_", n - 3L))
+
+    # Sort by most commits
+    counts <- vapply(activity, length, integer(1L))
+    activity <- activity[order(counts, decreasing = TRUE)]
+
+    lines <- "## This week's commits"
+    for (proj in names(activity)) {
+        commits <- activity[[proj]]
+        n <- length(commits)
+        # Show count and most recent 3
+        lines <- c(lines, sprintf("### %s (%d commit%s)", proj, n,
+                if (n == 1L) {
+                    ""
+                } else {
+                    "s"
+                }))
+        if (n > 3L) {
+            show <- commits[1:3]
+        } else {
+            show <- commits
+        }
+        for (c in show) {
+            lines <- c(lines, sprintf("- %s", c))
+        }
+        if (n > 3L) {
+            lines <- c(lines, sprintf("- _... +%d more_", n - 3L))
+        }
     }
-  }
-  lines
+    lines
 }
 
 #' Recent annotation files
 #' @noRd
 heartbeat_annotations <- function(annotations_dir, days) {
-  if (is.null(annotations_dir) || !dir.exists(annotations_dir)) {
-    return(character(0L))
-  }
+    if (is.null(annotations_dir) || !dir.exists(annotations_dir)) {
+        return(character(0L))
+    }
 
-  files <- list.files(annotations_dir, pattern = "\\.md$", full.names = TRUE)
-  if (length(files) == 0L) return(character(0L))
+    files <- list.files(annotations_dir, pattern = "\\.md$", full.names = TRUE)
+    if (length(files) == 0L) {
+        return(character(0L))
+    }
 
-  # Filter to files modified in the last N days
-  cutoff <- Sys.time() - as.difftime(days, units = "days")
-  mtimes <- file.mtime(files)
-  recent <- files[mtimes >= cutoff]
+    # Filter to files modified in the last N days
+    cutoff <- Sys.time() - as.difftime(days, units = "days")
+    mtimes <- file.mtime(files)
+    recent <- files[mtimes >= cutoff]
 
-  if (length(recent) == 0L) return(character(0L))
+    if (length(recent) == 0L) {
+        return(character(0L))
+    }
 
-  lines <- "## Recent ontology changes"
-  for (f in recent) {
-    lines <- c(lines, sprintf("- %s (%s)", basename(f),
-                              format(file.mtime(f), "%Y-%m-%d")))
-  }
-  lines
+    lines <- "## Recent ontology changes"
+    for (f in recent) {
+        lines <- c(lines,
+                   sprintf("- %s (%s)", basename(f),
+                           format(file.mtime(f), "%Y-%m-%d")))
+    }
+    lines
 }
+

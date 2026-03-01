@@ -12,13 +12,12 @@
 #' @return The file path (invisibly).
 #' @export
 hub <- function(name, content,
-                hubs_dir = file.path(path.expand("~"),
-                                     ".cache", "basalt", "hubs")) {
-  dir.create(hubs_dir, recursive = TRUE, showWarnings = FALSE)
-  outfile <- file.path(hubs_dir, paste0(name, ".md"))
-  writeLines(content, outfile)
-  message("Wrote hub: ", outfile)
-  invisible(outfile)
+                hubs_dir = file.path(tools::R_user_dir("basalt", "cache"), "hubs")) {
+    dir.create(hubs_dir, recursive = TRUE, showWarnings = FALSE)
+    outfile <- file.path(hubs_dir, paste0(name, ".md"))
+    writeLines(content, outfile)
+    message("Wrote hub: ", outfile)
+    invisible(outfile)
 }
 
 #' List all feature hubs
@@ -29,34 +28,30 @@ hub <- function(name, content,
 #' @return A data.frame with columns: name, file, links (comma-separated
 #'   wikilink targets).
 #' @export
-hubs <- function(hubs_dir = file.path(path.expand("~"),
-                                      ".cache", "basalt", "hubs")) {
-  if (!dir.exists(hubs_dir)) {
-    return(data.frame(name = character(), file = character(),
-                      links = character(), stringsAsFactors = FALSE))
-  }
+hubs <- function(hubs_dir = file.path(path.expand("~"), ".cache", "basalt",
+                                      "hubs")) {
+    if (!dir.exists(hubs_dir)) {
+        return(data.frame(name = character(), file = character(),
+                          links = character(), stringsAsFactors = FALSE))
+    }
 
-  files <- list.files(hubs_dir, pattern = "\\.md$", full.names = TRUE)
-  if (length(files) == 0L) {
-    return(data.frame(name = character(), file = character(),
-                      links = character(), stringsAsFactors = FALSE))
-  }
+    files <- list.files(hubs_dir, pattern = "\\.md$", full.names = TRUE)
+    if (length(files) == 0L) {
+        return(data.frame(name = character(), file = character(),
+                          links = character(), stringsAsFactors = FALSE))
+    }
 
-  names_vec <- tools::file_path_sans_ext(basename(files))
-  links_vec <- vapply(files, function(fp) {
-    lines <- readLines(fp, warn = FALSE)
-    all_links <- regmatches(lines, gregexpr("\\[\\[([^]]+)\\]\\]", lines))
-    all_links <- unlist(all_links)
-    if (length(all_links) == 0L) return("")
-    targets <- gsub("^\\[\\[|\\]\\]$", "", all_links)
-    paste(unique(targets), collapse = ", ")
-  }, character(1))
+    names_vec <- tools::file_path_sans_ext(basename(files))
+    links_vec <- vapply(files, function(fp) {
+        lines <- readLines(fp, warn = FALSE)
+        all_links <- regmatches(lines, gregexpr("\\[\\[([^]]+)\\]\\]", lines))
+        all_links <- unlist(all_links)
+        if (length(all_links) == 0L) return("")
+        targets <- gsub("^\\[\\[|\\]\\]$", "", all_links)
+        paste(unique(targets), collapse = ", ")
+    }, character(1))
 
-  data.frame(
-    name = names_vec,
-    file = files,
-    links = unname(links_vec),
-    stringsAsFactors = FALSE,
-    row.names = NULL
-  )
+    data.frame(name = names_vec, file = files, links = unname(links_vec),
+               stringsAsFactors = FALSE, row.names = NULL)
 }
+

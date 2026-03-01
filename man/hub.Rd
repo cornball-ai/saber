@@ -4,7 +4,7 @@
 \title{Feature hubs}
 \usage{
 hub(name, content,
-    hubs_dir = file.path(path.expand("~"), ".cache", "basalt", "hubs"))
+    hubs_dir = file.path(tools::R_user_dir("basalt", "cache"), "hubs"))
 }
 \arguments{
 \item{name}{Character. Hub name (used as filename).}
