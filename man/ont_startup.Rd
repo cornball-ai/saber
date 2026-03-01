@@ -3,12 +3,10 @@
 \alias{ont_startup}
 \title{Startup: discover project metadata and build unified ontology}
 \usage{
-ont_startup(
-  scan_dir = path.expand("~"),
-  db_dir = file.path(path.expand("~"), ".cache", "basalt"),
-  claude_dir = file.path(path.expand("~"), ".cache", "claude"),
-  memory_dir = file.path(path.expand("~"), ".claude", "projects")
-)
+ont_startup(scan_dir = path.expand("~"),
+            db_dir = file.path(path.expand("~"), ".cache", "basalt"),
+            claude_dir = file.path(path.expand("~"), ".cache", "claude"),
+            memory_dir = file.path(path.expand("~"), ".claude", "projects"))
 }
 \arguments{
 \item{scan_dir}{Directory to scan for projects (default: home directory).}

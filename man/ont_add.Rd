@@ -3,13 +3,8 @@
 \alias{ont_add}
 \title{Add terms and relations programmatically}
 \usage{
-ont_add(
-  terms = NULL,
-  relations = NULL,
-  db_path = NULL,
-  vault_path = NULL,
-  annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations")
-)
+ont_add(terms = NULL, relations = NULL, db_path = NULL, vault_path = NULL,
+        annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"))
 }
 \arguments{
 \item{terms}{Character vector of term names to add.}

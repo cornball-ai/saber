@@ -3,13 +3,9 @@
 \alias{ont_query}
 \title{Query the ontology graph}
 \usage{
-ont_query(
-  term,
-  relation,
-  direction = c("ancestors", "descendants", "siblings"),
-  db_path = NULL,
-  vault_path = NULL
-)
+ont_query(term, relation,
+          direction = c("ancestors", "descendants", "siblings"),
+          db_path = NULL, vault_path = NULL)
 }
 \arguments{
 \item{term}{Term name or ID to start from.}
