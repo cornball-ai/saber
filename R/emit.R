@@ -5,19 +5,16 @@
 #'
 #' Writes the current ontology to a file in OBO 1.4 format.
 #'
-#' @param db_path Path to the SQLite database.
+#' @param vault_path Path to the vault.
 #' @param outfile Path to write the OBO file. If NULL, writes to stdout.
-#' @param vault_path Path to the vault (used to derive db_path if db_path is NULL).
 #' @return The output path (invisibly), or NULL if written to stdout.
 #' @export
-emit_obo <- function(db_path = NULL, outfile = NULL, vault_path = NULL) {
-  db <- resolve_db(db_path, vault_path)
-  con <- db_connect(db)
-  on.exit(RSQLite::dbDisconnect(con))
+emit_obo <- function(vault_path = NULL, outfile = NULL) {
+  if (is.null(vault_path)) stop("vault_path must be provided.")
+  idx <- load_index(vault_path)
 
-  terms <- RSQLite::dbGetQuery(con, "SELECT * FROM terms")
-  relations <- RSQLite::dbGetQuery(con,
-    "SELECT * FROM relations WHERE confirmed = 1")
+  terms <- idx$terms
+  relations <- idx$relations[idx$relations$confirmed == 1L, , drop = FALSE]
 
   lines <- character(0L)
 
@@ -35,10 +32,12 @@ emit_obo <- function(db_path = NULL, outfile = NULL, vault_path = NULL) {
     lines <- c(lines, sprintf("id: %s", t$id))
     lines <- c(lines, sprintf("name: %s", t$name))
 
-    # Aliases as synonyms
-    aliases <- jsonlite_parse(t$aliases)
-    for (a in aliases) {
-      lines <- c(lines, sprintf('synonym: "%s" RELATED []', a))
+    # Aliases as synonyms (pipe-separated)
+    if (!is.na(t$aliases) && nchar(t$aliases) > 0L) {
+      als <- strsplit(t$aliases, "\\|")[[1L]]
+      for (a in trimws(als)) {
+        lines <- c(lines, sprintf('synonym: "%s" RELATED []', a))
+      }
     }
 
     # Relations

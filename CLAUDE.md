@@ -4,15 +4,15 @@
 
 A small R package that maintains a live ontology from a markdown vault. You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
 
-The vault (markdown files with frontmatter and typed links) is the source of truth. The SQLite index is derived. Never edit the index directly — edit the markdown, then rebuild.
+The vault (markdown files with frontmatter and typed links) is the source of truth. The TSV index is derived. Never edit the index directly — edit the markdown, then rebuild.
 
 This package is new and should evolve rapidly depending on how we end up using it. Don't be afraid to propose big changes depending on what's working.
 
 ## Design philosophy
 
 - Base R. No tidyverse. No pipes.
-- One real dependency: RSQLite. Everything else is base.
-- YAML frontmatter parsing: yaml package
+- One real dependency: yaml. Everything else is base R.
+- Index stored as TSV files (human-readable, diffable).
 - OBO emit is just writeLines(). No serialization library.
 - CRAN-viable.
 - Apache-2.0 license (consistent with cornyverse core packages).
@@ -33,12 +33,12 @@ Use the query results to build context, pick retrieval targets, expand search te
 
 | Function | Purpose |
 |---|---|
-| `index_vault(vault_path)` | Parse markdown files, build/update SQLite index |
+| `index_vault(vault_path)` | Parse markdown files, build/update TSV index |
 | `query(term, relation, direction)` | Traverse the typed graph (ancestors, descendants, siblings) |
 | `suggest(vault_path)` | Propose typed edges from untyped links. Returns candidates, NOT facts. |
 | `promote(term, vault_path)` | Write a stable `id:` into a file's frontmatter |
-| `emit_obo(db_path, outfile)` | Snapshot the current ontology to OBO format |
-| `status(db_path)` | Summary stats: term count, relation count, unconfirmed suggestions |
+| `emit_obo(vault_path, outfile)` | Snapshot the current ontology to OBO format |
+| `status(vault_path)` | Summary stats: term count, relation count, unconfirmed suggestions |
 | `add(terms, relations)` | Bulk-insert terms and relations programmatically |
 | `startup()` | Scan projects, build unified ontology, write Claude instructions |
 | `briefing(project)` | Generate per-project context briefing |
@@ -89,7 +89,7 @@ aliases:
 ```markdown
 is_a:: [[dev_tooling]]
 part_of:: [[cornyverse]]
-uses:: [[RSQLite]]
+uses:: [[yaml]]
 ```
 
 Dataview-style inline fields. The relation name is the key, the wikilink target is the value. These are the canonical typed edges.
@@ -107,19 +107,17 @@ A note is a term if ANY of:
 
 Everything else is just a note.
 
-## SQLite schema
+## Index format
 
-One database, default location `{vault_path}/.ontolite/index.db`.
-
-Tables:
-- `terms` — id, name, filepath, aliases (JSON array), promoted (bool), updated_at
-- `relations` — subject_id, relation_type, object_id, confirmed (bool), source (frontmatter|inline|suggested)
-- `files` — filepath, hash, parsed_at (for incremental rebuild)
+Three TSV files in `{vault_path}/.ontolite/`:
+- `terms.tsv` — id, name, filepath, aliases (pipe-separated), promoted (0/1), updated_at
+- `relations.tsv` — subject_id, relation_type, object_id, confirmed (0/1), source (inline|suggested|manual|auto)
+- `files.tsv` — filepath, hash, parsed_at (for incremental rebuild)
 
 ## ID generation
 
 When `promote()` is called:
-1. Find the max existing numeric ID in the db
+1. Find the max existing numeric ID in the index
 2. Increment by 1
 3. Write `id: PREFIX:NNNNNNN` into the file's frontmatter
 4. Update the index
@@ -133,7 +131,7 @@ The prefix is configurable, default `ONTO`. This is a deliberate action, not aut
 - Heading context (link under "## Methods" -> maybe `uses`)
 - Link frequency patterns
 
-Suggestions are written to the `relations` table with `confirmed = FALSE` and `source = 'suggested'`. Troy reviews them. You do NOT treat unconfirmed suggestions as facts.
+Suggestions are written to `relations.tsv` with `confirmed = 0` and `source = 'suggested'`. Troy reviews them. You do NOT treat unconfirmed suggestions as facts.
 
 When Troy confirms: he either adds the typed inline field to the markdown (source of truth) and re-indexes, or tells you to do it.
 
@@ -142,7 +140,7 @@ When Troy confirms: he either adds the typed inline field to the markdown (sourc
 When Troy says something like "that's not is_a, that's uses":
 1. Edit the markdown file: change the inline field
 2. Run `index_vault()` to pick up the change
-3. Do NOT manually patch the SQLite
+3. Do NOT manually patch the index files
 
 When Troy says "that note shouldn't be a term":
 1. Remove `type: term` and `id:` from frontmatter if present
@@ -175,11 +173,9 @@ R/
   symbols.R    — symbols(), AST symbol index
   blast.R      — blast_radius(), impact analysis
   hubs.R       — hub(), hubs(), feature hub files
-  db.R         — schema init, connection helpers
+  db.R         — load_index(), save_index(), TSV I/O
   parse.R      — frontmatter/link parsing
 inst/
-  sql/
-    schema.sql — CREATE TABLE statements
   tinytest/    — tests
 man/           — tinyrox
 DESCRIPTION
@@ -194,7 +190,7 @@ NAMESPACE
 
 ## Things you should NOT do
 
-- Do not add dependencies beyond RSQLite and yaml without asking Troy.
+- Do not add dependencies beyond yaml without asking Troy.
 - Do not silently promote notes to terms.
 - Do not treat suggested relations as confirmed.
 - Do not build an MCP server or HTTP layer. This is R-callable functions, nothing more.

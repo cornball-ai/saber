@@ -4,7 +4,7 @@
 \title{Query the ontology graph}
 \usage{
 query(term, relation, direction = c("ancestors", "descendants", "siblings"),
-      db_path = NULL, vault_path = NULL)
+      vault_path = NULL)
 }
 \arguments{
 \item{term}{Term name or ID to start from.}
@@ -13,9 +13,7 @@ query(term, relation, direction = c("ancestors", "descendants", "siblings"),
 
 \item{direction}{One of "ancestors", "descendants", or "siblings".}
 
-\item{db_path}{Path to the SQLite database. If NULL, not usable.}
-
-\item{vault_path}{Path to the vault (used to derive db_path if db_path is NULL).}
+\item{vault_path}{Path to the vault.}
 }
 \value{
 A data.frame with columns: id, name, distance.

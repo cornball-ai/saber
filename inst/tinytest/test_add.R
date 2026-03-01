@@ -29,13 +29,11 @@ res <- add(
 expect_equal(res$terms, 3L)
 expect_equal(res$relations, 0L)
 
-# Verify in DB
-con <- RSQLite::dbConnect(RSQLite::SQLite(),
-  file.path(vault, ".ontolite", "index.db"))
-terms <- RSQLite::dbGetQuery(con, "SELECT id FROM terms ORDER BY id")
-expect_true("alpha" %in% terms$id)
-expect_true("beta" %in% terms$id)
-expect_true("gamma" %in% terms$id)
+# Verify in index
+idx <- basalt:::load_index(vault)
+expect_true("alpha" %in% idx$terms$id)
+expect_true("beta" %in% idx$terms$id)
+expect_true("gamma" %in% idx$terms$id)
 
 # --- Test adding relations ---
 
@@ -54,18 +52,19 @@ res2 <- add(
 
 expect_equal(res2$relations, 2L)
 
-rels <- RSQLite::dbGetQuery(con, "SELECT * FROM relations WHERE source = 'manual'")
-expect_equal(nrow(rels), 2L)
-expect_true(all(rels$confirmed == 1L))
+idx <- basalt:::load_index(vault)
+manual_rels <- idx$relations[idx$relations$source == "manual", , drop = FALSE]
+expect_equal(nrow(manual_rels), 2L)
+expect_true(all(manual_rels$confirmed == 1L))
 
 # alpha is_a gamma
-expect_true(any(rels$subject_id == "alpha" & rels$relation_type == "is_a" &
-                rels$object_id == "gamma"))
+expect_true(any(manual_rels$subject_id == "alpha" &
+                manual_rels$relation_type == "is_a" &
+                manual_rels$object_id == "gamma"))
 # beta uses alpha
-expect_true(any(rels$subject_id == "beta" & rels$relation_type == "uses" &
-                rels$object_id == "alpha"))
-
-RSQLite::dbDisconnect(con)
+expect_true(any(manual_rels$subject_id == "beta" &
+                manual_rels$relation_type == "uses" &
+                manual_rels$object_id == "alpha"))
 
 # --- Test annotation file written ---
 

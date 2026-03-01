@@ -5,7 +5,7 @@
 #'
 #' Examines untyped wikilinks and proposes typed relations based on
 #' heuristics: folder co-location, heading context, and link frequency.
-#' Suggestions are written to the database with \code{confirmed = FALSE}.
+#' Suggestions are written to the index with \code{confirmed = 0}.
 #'
 #' @param vault_path Path to the markdown vault directory.
 #' @return A data.frame of suggestions with columns: subject, relation_type,
@@ -13,9 +13,7 @@
 #' @export
 suggest <- function(vault_path) {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
-  dbfile <- db_path(vault_path)
-  con <- db_connect(dbfile)
-  on.exit(RSQLite::dbDisconnect(con))
+  idx <- load_index(vault_path)
 
   md_files <- list.files(vault_path, pattern = "\\.md$", recursive = TRUE,
                          full.names = TRUE)
@@ -29,7 +27,7 @@ suggest <- function(vault_path) {
     stringsAsFactors = FALSE
   )
 
-  terms <- RSQLite::dbGetQuery(con, "SELECT id, name FROM terms")
+  terms <- idx$terms
   term_names <- terms$name
 
   for (fp in md_files) {
@@ -46,7 +44,7 @@ suggest <- function(vault_path) {
     # Heuristic: co-location suggests part_of
     file_dir <- dirname(fp)
     for (target in untyped) {
-      target_row <- terms[terms$name == target, ]
+      target_row <- terms[terms$name == target, , drop = FALSE]
       if (nrow(target_row) == 0L || is.na(target_row$filepath[1L])) next
       target_path <- file.path(vault_path, target_row$filepath[1L])
       if (file.exists(target_path) && dirname(target_path) == file_dir) {
@@ -86,15 +84,25 @@ suggest <- function(vault_path) {
                  suggestions$object, sep = "|")
     suggestions <- suggestions[!duplicated(key), , drop = FALSE]
 
-    # Write to db as unconfirmed
+    # Write to index as unconfirmed
     for (i in seq_len(nrow(suggestions))) {
-      RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO relations
-           (subject_id, relation_type, object_id, confirmed, source)
-         VALUES (?, ?, ?, 0, 'suggested')",
-        params = list(suggestions$subject[i], suggestions$relation_type[i],
-                      suggestions$object[i]))
+      subj <- suggestions$subject[i]
+      rel <- suggestions$relation_type[i]
+      obj <- suggestions$object[i]
+
+      # Check for duplicate
+      dup <- idx$relations$subject_id == subj &
+             idx$relations$relation_type == rel &
+             idx$relations$object_id == obj
+      if (any(dup)) next
+
+      idx$relations <- rbind(idx$relations, data.frame(
+        subject_id = subj, relation_type = rel, object_id = obj,
+        confirmed = 0L, source = "suggested",
+        stringsAsFactors = FALSE
+      ))
     }
+    save_index(idx, vault_path)
   }
 
   suggestions

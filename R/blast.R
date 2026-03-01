@@ -47,36 +47,29 @@ blast_radius <- function(fn, project = NULL,
   }
 
   # 2. Find downstream projects via ontology `uses` relations
-  db <- tryCatch(resolve_db(NULL, vault_path), error = function(e) NULL)
-  if (!is.null(db) && file.exists(db)) {
-    con <- tryCatch(db_connect(db), error = function(e) NULL)
-    if (!is.null(con)) {
-      on.exit(RSQLite::dbDisconnect(con))
+  idx <- tryCatch(load_index(vault_path), error = function(e) NULL)
+  if (!is.null(idx)) {
+    rels <- idx$relations[idx$relations$confirmed == 1L, , drop = FALSE]
+    downstream <- rels$subject_id[rels$object_id == project_name &
+                                  rels$relation_type == "uses"]
 
-      # Find projects that `uses` this project
-      downstream <- RSQLite::dbGetQuery(con,
-        "SELECT subject_id FROM relations
-         WHERE object_id = ? AND relation_type = 'uses' AND confirmed = 1",
-        params = list(project_name))
+    for (ds_name in downstream) {
+      ds_dir <- file.path(path.expand("~"), ds_name)
+      if (!dir.exists(ds_dir)) next
 
-      for (ds_name in downstream$subject_id) {
-        ds_dir <- file.path(path.expand("~"), ds_name)
-        if (!dir.exists(ds_dir)) next
-
-        ds_syms <- symbols(ds_dir, cache_dir = cache_dir)
-        # Look for pkg::fn calls
-        qualified <- paste0(project_name, "::", fn)
-        ds_callers <- ds_syms$calls[ds_syms$calls$callee == qualified |
-                                    ds_syms$calls$callee == fn, , drop = FALSE]
-        if (nrow(ds_callers) > 0L) {
-          results <- rbind(results, data.frame(
-            caller = ds_callers$caller,
-            project = ds_name,
-            file = ds_callers$file,
-            line = ds_callers$line,
-            stringsAsFactors = FALSE
-          ))
-        }
+      ds_syms <- symbols(ds_dir, cache_dir = cache_dir)
+      # Look for pkg::fn calls
+      qualified <- paste0(project_name, "::", fn)
+      ds_callers <- ds_syms$calls[ds_syms$calls$callee == qualified |
+                                  ds_syms$calls$callee == fn, , drop = FALSE]
+      if (nrow(ds_callers) > 0L) {
+        results <- rbind(results, data.frame(
+          caller = ds_callers$caller,
+          project = ds_name,
+          file = ds_callers$file,
+          line = ds_callers$line,
+          stringsAsFactors = FALSE
+        ))
       }
     }
   }

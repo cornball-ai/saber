@@ -16,35 +16,18 @@ writeLines(c(
 
 index_vault(vault)
 
-# Add terms and relations directly
-db <- file.path(vault, ".ontolite", "index.db")
-con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
-
-for (t in c("whisper", "stt", "audio", "torch", "cornyverse")) {
-  RSQLite::dbExecute(con,
-    "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-     VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-    params = list(t, t))
-}
-
-RSQLite::dbExecute(con,
-  "INSERT OR IGNORE INTO relations
-     (subject_id, relation_type, object_id, confirmed, source)
-   VALUES ('whisper', 'is_a', 'stt', 1, 'manual')")
-RSQLite::dbExecute(con,
-  "INSERT OR IGNORE INTO relations
-     (subject_id, relation_type, object_id, confirmed, source)
-   VALUES ('whisper', 'is_a', 'audio', 1, 'manual')")
-RSQLite::dbExecute(con,
-  "INSERT OR IGNORE INTO relations
-     (subject_id, relation_type, object_id, confirmed, source)
-   VALUES ('whisper', 'part_of', 'cornyverse', 1, 'manual')")
-RSQLite::dbExecute(con,
-  "INSERT OR IGNORE INTO relations
-     (subject_id, relation_type, object_id, confirmed, source)
-   VALUES ('whisper', 'uses', 'torch', 1, 'manual')")
-
-RSQLite::dbDisconnect(con)
+# Add terms and relations via add()
+add(
+  terms = c("stt", "audio", "torch", "cornyverse"),
+  relations = data.frame(
+    subject = c("whisper", "whisper", "whisper", "whisper"),
+    relation_type = c("is_a", "is_a", "part_of", "uses"),
+    object = c("stt", "audio", "cornyverse", "torch"),
+    stringsAsFactors = FALSE
+  ),
+  vault_path = vault,
+  annotations_dir = NULL
+)
 
 # --- Setup: fake memory ---
 

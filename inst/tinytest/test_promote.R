@@ -32,14 +32,11 @@ expect_equal(new_id, "ONTO:0000002")
 lines <- readLines(file.path(vault, "Neural Networks.md"))
 expect_true(any(grepl("^id: ONTO:0000002", lines)))
 
-# Check the DB was updated
-con <- RSQLite::dbConnect(RSQLite::SQLite(),
-  file.path(vault, ".ontolite", "index.db"))
-row <- RSQLite::dbGetQuery(con,
-  "SELECT * FROM terms WHERE name = 'Neural Networks'")
+# Check the index was updated
+idx <- basalt:::load_index(vault)
+row <- idx$terms[idx$terms$name == "Neural Networks", ]
 expect_equal(row$id, "ONTO:0000002")
 expect_equal(row$promoted, 1L)
-RSQLite::dbDisconnect(con)
 
 # --- Already promoted ---
 expect_message(promote("Neural Networks", vault), "already promoted")

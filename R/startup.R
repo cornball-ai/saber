@@ -13,7 +13,7 @@
 #' files from \code{~/.cache/basalt/annotations/} are included in the index.
 #'
 #' @param scan_dir Directory to scan for projects (default: home directory).
-#' @param db_dir Directory for the unified ontology database and staging vault
+#' @param db_dir Directory for the unified ontology and staging vault
 #'   (default: \code{~/.cache/basalt}).
 #' @param claude_dir Directory for Claude Code instructions file
 #'   (default: \code{~/.cache/claude}).
@@ -96,12 +96,10 @@ startup <- function(scan_dir = path.expand("~"),
   }
 
   # Copy Claude Code memory files into vault
-  # Directory names are like -home-troy-whisper -> project "whisper"
   for (fp in found_memories) {
-    mem_dir <- dirname(fp)           # .../memory
-    proj_dir <- dirname(mem_dir)     # .../-home-troy-whisper
+    mem_dir <- dirname(fp)
+    proj_dir <- dirname(mem_dir)
     proj_encoded <- basename(proj_dir)
-    # Extract project name: last segment after splitting on -home-troy-
     proj_name <- sub("^.*-home-[^-]+-", "", proj_encoded)
     filename <- basename(fp)
     dest <- file.path(vault_dir,
@@ -122,17 +120,18 @@ startup <- function(scan_dir = path.expand("~"),
   # Index the vault (picks up typed links from basalt.md and annotation files)
   index_vault(vault_dir)
 
-  # Now add auto-terms and DESCRIPTION relations directly to the DB
-  dbfile <- db_path(vault_dir)
-  con <- db_connect(dbfile)
-  on.exit(RSQLite::dbDisconnect(con))
+  # Now add auto-terms and DESCRIPTION relations directly to the index
+  idx <- load_index(vault_dir)
 
   # Auto-register every project as a term
   for (pname in project_names) {
-    RSQLite::dbExecute(con,
-      "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-       VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-      params = list(pname, pname))
+    if (!pname %in% idx$terms$id) {
+      idx$terms <- rbind(idx$terms, data.frame(
+        id = pname, name = pname, filepath = NA_character_,
+        aliases = "", promoted = 0L, updated_at = now_ts(),
+        stringsAsFactors = FALSE
+      ))
+    }
   }
 
   # Parse DESCRIPTION files for dependency relations
@@ -143,25 +142,30 @@ startup <- function(scan_dir = path.expand("~"),
     pname <- basename(dirname(desc_fp))
 
     for (dep in info$imports) {
-      RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO relations
-           (subject_id, relation_type, object_id, confirmed, source)
-         VALUES (?, 'uses', ?, 1, 'auto')",
-        params = list(pname, dep))
+      # Check for duplicate
+      dup <- idx$relations$subject_id == pname &
+             idx$relations$relation_type == "uses" &
+             idx$relations$object_id == dep
+      if (any(dup)) next
+
+      idx$relations <- rbind(idx$relations, data.frame(
+        subject_id = pname, relation_type = "uses", object_id = dep,
+        confirmed = 1L, source = "auto",
+        stringsAsFactors = FALSE
+      ))
       # Ensure the dependency exists as a term
-      RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-         VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-        params = list(dep, dep))
+      if (!dep %in% idx$terms$id) {
+        idx$terms <- rbind(idx$terms, data.frame(
+          id = dep, name = dep, filepath = NA_character_,
+          aliases = "", promoted = 0L, updated_at = now_ts(),
+          stringsAsFactors = FALSE
+        ))
+      }
       n_deps <- n_deps + 1L
     }
   }
 
-  # Resolve link targets (in case basalt.md files reference project names)
-  ensure_link_targets(con)
-
-  RSQLite::dbDisconnect(con)
-  on.exit(NULL)
+  save_index(idx, vault_dir)
 
   # Write Claude Code instructions
   write_claude_instructions(claude_dir, db_dir)
@@ -181,7 +185,6 @@ write_claude_instructions <- function(claude_dir, db_dir) {
   dir.create(claude_dir, recursive = TRUE, showWarnings = FALSE)
   outfile <- file.path(claude_dir, "CLAUDE.md")
 
-  db_path <- file.path(db_dir, "vault", ".ontolite", "index.db")
   vault_path <- file.path(db_dir, "vault")
 
   instructions <- c(
@@ -198,11 +201,11 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "library(basalt)",
     "",
     "# Check what's indexed",
-    sprintf("basalt::status(db_path = \"%s\")", db_path),
+    sprintf("basalt::status(vault_path = \"%s\")", vault_path),
     "",
     "# Query relationships",
-    sprintf("basalt::query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")", db_path),
-    sprintf("basalt::query(\"whisper\", \"uses\", \"ancestors\", db_path = \"%s\")", db_path),
+    sprintf("basalt::query(\"torch\", \"uses\", \"descendants\", vault_path = \"%s\")", vault_path),
+    sprintf("basalt::query(\"whisper\", \"uses\", \"ancestors\", vault_path = \"%s\")", vault_path),
     "",
     "# Rebuild the index after project changes",
     "basalt::startup()",
@@ -233,9 +236,9 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "## Shell usage",
     "",
     "```bash",
-    sprintf("r -e 'basalt::query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")'", db_path),
+    sprintf("r -e 'basalt::query(\"torch\", \"uses\", \"descendants\", vault_path = \"%s\")'", vault_path),
     "r -e 'basalt::startup()'",
-    sprintf("r -e 'basalt::status(db_path = \"%s\")'", db_path),
+    sprintf("r -e 'basalt::status(vault_path = \"%s\")'", vault_path),
     "```",
     "",
     "## The suggest/confirm loop",
@@ -246,7 +249,7 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     sprintf("basalt::suggest(\"%s\")", vault_path),
     "```",
     "",
-    "Suggestions are written to the database with `confirmed = FALSE`.",
+    "Suggestions are written to the index with `confirmed = 0`.",
     "Do NOT treat unconfirmed suggestions as facts. Troy reviews them.",
     "",
     "## Correction protocol",
@@ -255,7 +258,7 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "",
     "1. Edit the annotation file in ~/.cache/basalt/annotations/",
     "2. Run `basalt::startup()` to pick up the change",
-    "3. Do NOT manually patch the SQLite database",
+    "3. Do NOT manually patch the index files",
     "",
     "## Promoting terms",
     "",
@@ -268,7 +271,7 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "## OBO export",
     "",
     "```r",
-    sprintf("basalt::emit_obo(db_path = \"%s\", outfile = \"ontology.obo\")", db_path),
+    sprintf("basalt::emit_obo(vault_path = \"%s\", outfile = \"ontology.obo\")", vault_path),
     "```"
   )
 

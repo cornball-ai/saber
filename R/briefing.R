@@ -65,55 +65,43 @@ briefing <- function(project = NULL,
 #' Ontology identity section
 #' @noRd
 briefing_ontology <- function(project, vault_path) {
-  db <- tryCatch(resolve_db(NULL, vault_path), error = function(e) NULL)
-  if (is.null(db) || !file.exists(db)) return(character(0L))
+  idx <- tryCatch(load_index(vault_path), error = function(e) NULL)
+  if (is.null(idx)) return(character(0L))
 
-  con <- tryCatch(db_connect(db), error = function(e) NULL)
-  if (is.null(con)) return(character(0L))
-  on.exit(RSQLite::dbDisconnect(con))
-
-  term_id <- resolve_term(con, project)
+  term_id <- resolve_term(idx$terms, project)
   if (is.na(term_id)) return(sprintf("_%s is not in the ontology._", project))
 
   lines <- "## Identity"
+  rels <- idx$relations[idx$relations$confirmed == 1L, , drop = FALSE]
 
   # is_a
-  isa <- RSQLite::dbGetQuery(con,
-    "SELECT object_id FROM relations
-     WHERE subject_id = ? AND relation_type = 'is_a' AND confirmed = 1",
-    params = list(term_id))
-  if (nrow(isa) > 0L) {
-    lines <- c(lines, sprintf("- **is_a**: %s",
-                              paste(isa$object_id, collapse = ", ")))
+  isa <- rels$object_id[rels$subject_id == term_id &
+                        rels$relation_type == "is_a"]
+  if (length(isa) > 0L) {
+    lines <- c(lines, sprintf("- **is_a**: %s", paste(isa, collapse = ", ")))
   }
 
   # part_of
-  partof <- RSQLite::dbGetQuery(con,
-    "SELECT object_id FROM relations
-     WHERE subject_id = ? AND relation_type = 'part_of' AND confirmed = 1",
-    params = list(term_id))
-  if (nrow(partof) > 0L) {
+  partof <- rels$object_id[rels$subject_id == term_id &
+                           rels$relation_type == "part_of"]
+  if (length(partof) > 0L) {
     lines <- c(lines, sprintf("- **part_of**: %s",
-                              paste(partof$object_id, collapse = ", ")))
+                              paste(partof, collapse = ", ")))
   }
 
   # wraps
-  wraps <- RSQLite::dbGetQuery(con,
-    "SELECT object_id FROM relations
-     WHERE subject_id = ? AND relation_type = 'wraps' AND confirmed = 1",
-    params = list(term_id))
-  if (nrow(wraps) > 0L) {
+  wraps <- rels$object_id[rels$subject_id == term_id &
+                          rels$relation_type == "wraps"]
+  if (length(wraps) > 0L) {
     lines <- c(lines, sprintf("- **wraps**: %s",
-                              paste(wraps$object_id, collapse = ", ")))
+                              paste(wraps, collapse = ", ")))
   }
 
   # direct uses (not transitive)
-  uses <- RSQLite::dbGetQuery(con,
-    "SELECT object_id FROM relations
-     WHERE subject_id = ? AND relation_type = 'uses' AND confirmed = 1",
-    params = list(term_id))
-  if (nrow(uses) > 0L) {
-    deps <- uses$object_id
+  uses <- rels$object_id[rels$subject_id == term_id &
+                         rels$relation_type == "uses"]
+  if (length(uses) > 0L) {
+    deps <- uses
     if (length(deps) > 15L) {
       deps <- c(deps[1:15], sprintf("... +%d more", length(deps) - 15L))
     }
@@ -126,17 +114,13 @@ briefing_ontology <- function(project, vault_path) {
 #' Siblings section
 #' @noRd
 briefing_siblings <- function(project, vault_path) {
-  db <- tryCatch(resolve_db(NULL, vault_path), error = function(e) NULL)
-  if (is.null(db) || !file.exists(db)) return(character(0L))
+  idx <- tryCatch(load_index(vault_path), error = function(e) NULL)
+  if (is.null(idx)) return(character(0L))
 
-  con <- tryCatch(db_connect(db), error = function(e) NULL)
-  if (is.null(con)) return(character(0L))
-  on.exit(RSQLite::dbDisconnect(con))
-
-  term_id <- resolve_term(con, project)
+  term_id <- resolve_term(idx$terms, project)
   if (is.na(term_id)) return(character(0L))
 
-  sibs <- tryCatch(find_siblings(con, term_id, "is_a"),
+  sibs <- tryCatch(find_siblings(idx, term_id, "is_a"),
                    error = function(e) NULL)
   if (is.null(sibs) || nrow(sibs) == 0L) return(character(0L))
 

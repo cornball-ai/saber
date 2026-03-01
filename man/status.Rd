@@ -3,16 +3,13 @@
 \alias{status}
 \title{Ontology status summary}
 \usage{
-status(db_path = NULL, vault_path = NULL)
+status(vault_path = NULL)
 }
 \arguments{
-\item{db_path}{Path to the SQLite database.}
-
-\item{vault_path}{Path to the vault (used to derive db_path if db_path is NULL).}
+\item{vault_path}{Path to the vault.}
 }
 \value{
-A list with components: terms, promoted, relations, suggestions,
-  relation_types.
+A list with class \code{basalt_status}.
 }
 \description{
 Summary stats for the ontology index.

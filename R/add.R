@@ -4,25 +4,23 @@
 
 #' Add terms and relations to the ontology
 #'
-#' Insert terms and/or relations directly into the SQLite index. Optionally
+#' Insert terms and/or relations directly into the index. Optionally
 #' writes a markdown annotation file to persist additions across re-indexes.
 #'
 #' @param terms Character vector of term names to add.
 #' @param relations A data.frame with columns: subject, relation_type, object.
-#' @param db_path Path to the SQLite database.
-#' @param vault_path Path to the vault (used to derive db_path if db_path is NULL).
+#' @param vault_path Path to the vault.
 #' @param annotations_dir Directory for persistent annotation files. Set to
 #'   NULL to skip writing annotations. Default: \code{~/.cache/basalt/annotations}.
 #' @return A list with counts of terms and relations added (invisibly).
 #' @export
 add <- function(terms = NULL, relations = NULL,
-                    db_path = NULL, vault_path = NULL,
-                    annotations_dir = file.path(path.expand("~"),
-                                                ".cache", "basalt",
-                                                "annotations")) {
-  db <- resolve_db(db_path, vault_path)
-  con <- db_connect(db)
-  on.exit(RSQLite::dbDisconnect(con))
+                vault_path = NULL,
+                annotations_dir = file.path(path.expand("~"),
+                                            ".cache", "basalt",
+                                            "annotations")) {
+  if (is.null(vault_path)) stop("vault_path must be provided.")
+  idx <- load_index(vault_path)
 
   n_terms <- 0L
   n_rels <- 0L
@@ -30,11 +28,13 @@ add <- function(terms = NULL, relations = NULL,
   # Insert terms
   if (!is.null(terms) && length(terms) > 0L) {
     for (t in terms) {
-      res <- RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-         VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-        params = list(t, t))
-      n_terms <- n_terms + res
+      if (t %in% idx$terms$id) next
+      idx$terms <- rbind(idx$terms, data.frame(
+        id = t, name = t, filepath = NA_character_,
+        aliases = "", promoted = 0L, updated_at = now_ts(),
+        stringsAsFactors = FALSE
+      ))
+      n_terms <- n_terms + 1L
     }
   }
 
@@ -45,25 +45,42 @@ add <- function(terms = NULL, relations = NULL,
       stop("relations must have columns: subject, relation_type, object")
     }
     for (i in seq_len(nrow(relations))) {
-      # Ensure subject and object exist as terms
-      RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-         VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-        params = list(relations$subject[i], relations$subject[i]))
-      RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO terms (id, name, promoted, updated_at)
-         VALUES (?, ?, 0, strftime('%Y-%m-%dT%H:%M:%S', 'now'))",
-        params = list(relations$object[i], relations$object[i]))
+      subj <- relations$subject[i]
+      rel <- relations$relation_type[i]
+      obj <- relations$object[i]
 
-      res <- RSQLite::dbExecute(con,
-        "INSERT OR IGNORE INTO relations
-           (subject_id, relation_type, object_id, confirmed, source)
-         VALUES (?, ?, ?, 1, 'manual')",
-        params = list(relations$subject[i], relations$relation_type[i],
-                      relations$object[i]))
-      n_rels <- n_rels + res
+      # Ensure subject and object exist as terms
+      if (!subj %in% idx$terms$id) {
+        idx$terms <- rbind(idx$terms, data.frame(
+          id = subj, name = subj, filepath = NA_character_,
+          aliases = "", promoted = 0L, updated_at = now_ts(),
+          stringsAsFactors = FALSE
+        ))
+      }
+      if (!obj %in% idx$terms$id) {
+        idx$terms <- rbind(idx$terms, data.frame(
+          id = obj, name = obj, filepath = NA_character_,
+          aliases = "", promoted = 0L, updated_at = now_ts(),
+          stringsAsFactors = FALSE
+        ))
+      }
+
+      # Check for duplicate
+      dup <- idx$relations$subject_id == subj &
+             idx$relations$relation_type == rel &
+             idx$relations$object_id == obj
+      if (any(dup)) next
+
+      idx$relations <- rbind(idx$relations, data.frame(
+        subject_id = subj, relation_type = rel, object_id = obj,
+        confirmed = 1L, source = "manual",
+        stringsAsFactors = FALSE
+      ))
+      n_rels <- n_rels + 1L
     }
   }
+
+  save_index(idx, vault_path)
 
   # Write persistent annotation file
   if (!is.null(annotations_dir)) {

@@ -18,5 +18,5 @@ Suggest typed relations from untyped links
 
 Examines untyped wikilinks and proposes typed relations based on
 heuristics: folder co-location, heading context, and link frequency.
-Suggestions are written to the database with \code{confirmed = FALSE}.
+Suggestions are written to the index with \code{confirmed = 0}.
 }

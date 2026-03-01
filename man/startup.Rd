@@ -11,7 +11,7 @@ startup(scan_dir = path.expand("~"),
 \arguments{
 \item{scan_dir}{Directory to scan for projects (default: home directory).}
 
-\item{db_dir}{Directory for the unified ontology database and staging vault
+\item{db_dir}{Directory for the unified ontology and staging vault
 (default: \code{~/.cache/basalt}).}
 
 \item{claude_dir}{Directory for Claude Code instructions file

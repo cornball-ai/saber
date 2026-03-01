@@ -3,14 +3,12 @@
 \alias{emit_obo}
 \title{Emit OBO format}
 \usage{
-emit_obo(db_path = NULL, outfile = NULL, vault_path = NULL)
+emit_obo(vault_path = NULL, outfile = NULL)
 }
 \arguments{
-\item{db_path}{Path to the SQLite database.}
+\item{vault_path}{Path to the vault.}
 
 \item{outfile}{Path to write the OBO file. If NULL, writes to stdout.}
-
-\item{vault_path}{Path to the vault (used to derive db_path if db_path is NULL).}
 }
 \value{
 The output path (invisibly), or NULL if written to stdout.
