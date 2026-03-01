@@ -84,6 +84,14 @@ basalt draws on a few traditions:
   basalt's feature hubs and blast radius analysis are directly inspired by
   Context+'s `get_feature_hub` and `get_blast_radius` tools.
 
+- **[btw](https://github.com/jumpsetgo/btw)** /
+  **[fyi](https://github.com/cornball-ai/fyi)** — Tools that make R package
+  APIs legible to LLMs. btw pioneered the idea of dumping package exports
+  and help pages as structured text for AI consumption. fyi removed the
+  need for an MCP server, added internal function introspection, and
+  converted Rd to markdown. basalt's `pkg_exports()`, `pkg_internals()`,
+  and `pkg_help()` are a direct fold-in of fyi.
+
 - **Base R** — R has shipped `getParseData()`, `tools::Rd_db()`,
   `tools::parse_Rd()`, and `read.dcf()` for decades. basalt's code analysis,
   package introspection, and DESCRIPTION parsing all use these built-in
