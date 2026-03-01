@@ -1,12 +1,12 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_startup}
-\alias{ont_startup}
+\name{startup}
+\alias{startup}
 \title{Startup: discover project metadata and build unified ontology}
 \usage{
-ont_startup(scan_dir = path.expand("~"),
-            db_dir = file.path(path.expand("~"), ".cache", "basalt"),
-            claude_dir = file.path(path.expand("~"), ".cache", "claude"),
-            memory_dir = file.path(path.expand("~"), ".claude", "projects"))
+startup(scan_dir = path.expand("~"),
+        db_dir = file.path(path.expand("~"), ".cache", "basalt"),
+        claude_dir = file.path(path.expand("~"), ".cache", "claude"),
+        memory_dir = file.path(path.expand("~"), ".claude", "projects"))
 }
 \arguments{
 \item{scan_dir}{Directory to scan for projects (default: home directory).}
@@ -21,7 +21,7 @@ ont_startup(scan_dir = path.expand("~"),
 (default: \code{~/.claude/projects}). Set to NULL to skip.}
 }
 \value{
-An \code{ont_status} object (invisibly).
+A \code{basalt_status} object (invisibly).
 }
 \description{
 Scan home directory for project metadata, auto-register

@@ -1,12 +1,12 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_heartbeat}
-\alias{ont_heartbeat}
+\name{heartbeat}
+\alias{heartbeat}
 \title{Weekly heartbeat}
 \usage{
-ont_heartbeat(scan_dir = path.expand("~"),
-              briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
-              annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"),
-              days = 7L)
+heartbeat(scan_dir = path.expand("~"),
+          briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
+          annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"),
+          days = 7L)
 }
 \arguments{
 \item{scan_dir}{Directory to scan for project git repos.}

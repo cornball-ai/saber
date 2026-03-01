@@ -21,10 +21,10 @@ writeLines(c(
   "is_a:: [[Machine Learning]]"
 ), file.path(vault, "Neural Networks.md"))
 
-ont_index(vault)
+index_vault(vault)
 
 # --- Promote a term ---
-new_id <- ont_promote("Neural Networks", vault)
+new_id <- promote("Neural Networks", vault)
 expect_true(grepl("^ONTO:", new_id))
 expect_equal(new_id, "ONTO:0000002")
 
@@ -42,9 +42,9 @@ expect_equal(row$promoted, 1L)
 RSQLite::dbDisconnect(con)
 
 # --- Already promoted ---
-expect_message(ont_promote("Neural Networks", vault), "already promoted")
+expect_message(promote("Neural Networks", vault), "already promoted")
 
 # --- Unknown term ---
-expect_error(ont_promote("Nonexistent", vault))
+expect_error(promote("Nonexistent", vault))
 
 unlink(vault, recursive = TRUE)

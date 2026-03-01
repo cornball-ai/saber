@@ -10,7 +10,7 @@
 #' @param vault_path Path to the markdown vault directory.
 #' @return The database path (invisibly).
 #' @export
-ont_index <- function(vault_path) {
+index_vault <- function(vault_path) {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
   dbfile <- db_path(vault_path)
   con <- db_connect(dbfile, create = TRUE)

@@ -11,7 +11,7 @@
 #' @return A data.frame of suggestions with columns: subject, relation_type,
 #'   object, reason.
 #' @export
-ont_suggest <- function(vault_path) {
+suggest <- function(vault_path) {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
   dbfile <- db_path(vault_path)
   con <- db_connect(dbfile)

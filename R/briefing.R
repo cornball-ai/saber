@@ -19,7 +19,7 @@
 #' @return The briefing text (character string), returned invisibly. Also
 #'   written to \code{briefs_dir/{project}.md}.
 #' @export
-ont_briefing <- function(project = NULL,
+briefing <- function(project = NULL,
                          vault_path = file.path(path.expand("~"),
                                                 ".cache", "basalt", "vault"),
                          briefs_dir = file.path(path.expand("~"),

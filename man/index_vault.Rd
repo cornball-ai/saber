@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_index}
-\alias{ont_index}
+\name{index_vault}
+\alias{index_vault}
 \title{Build or update the ontology index}
 \usage{
-ont_index(vault_path)
+index_vault(vault_path)
 }
 \arguments{
 \item{vault_path}{Path to the markdown vault directory.}

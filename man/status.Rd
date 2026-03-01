@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_status}
-\alias{ont_status}
+\name{status}
+\alias{status}
 \title{Ontology status summary}
 \usage{
-ont_status(db_path = NULL, vault_path = NULL)
+status(db_path = NULL, vault_path = NULL)
 }
 \arguments{
 \item{db_path}{Path to the SQLite database.}

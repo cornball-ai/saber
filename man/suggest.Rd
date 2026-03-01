@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_suggest}
-\alias{ont_suggest}
+\name{suggest}
+\alias{suggest}
 \title{Suggest typed relations}
 \usage{
-ont_suggest(vault_path)
+suggest(vault_path)
 }
 \arguments{
 \item{vault_path}{Path to the markdown vault directory.}

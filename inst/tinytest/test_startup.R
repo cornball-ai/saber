@@ -84,18 +84,18 @@ writeLines(c(
   "Key insight: uses RSQLite for everything."
 ), file.path(fake_claude, "MEMORY.md"))
 
-# --- Test ont_startup ---
+# --- Test startup ---
 
 cache_dir <- tempfile("cache")
 claude_dir <- file.path(cache_dir, "claude")
 
-st <- ont_startup(scan_dir = fake_home,
+st <- startup(scan_dir = fake_home,
                   db_dir = file.path(cache_dir, "basalt"),
                   claude_dir = claude_dir,
                   memory_dir = file.path(fake_home, ".claude", "projects"))
 
 # Status should be returned
-expect_true(inherits(st, "ont_status"))
+expect_true(inherits(st, "basalt_status"))
 
 # Database should exist
 db <- file.path(cache_dir, "basalt", "vault", ".ontolite", "index.db")
@@ -145,14 +145,14 @@ claude_md <- file.path(claude_dir, "CLAUDE.md")
 expect_true(file.exists(claude_md))
 
 text <- paste(readLines(claude_md), collapse = "\n")
-expect_true(grepl("ont_add", text))
-expect_true(grepl("ont_query", text))
+expect_true(grepl("basalt::add", text))
+expect_true(grepl("basalt::query", text))
 expect_true(grepl("correction protocol", text, ignore.case = TRUE))
 
 # --- Test with empty directory ---
 empty_dir <- tempfile("empty")
 dir.create(empty_dir)
-result <- ont_startup(scan_dir = empty_dir,
+result <- startup(scan_dir = empty_dir,
                       db_dir = tempfile("emptycache"),
                       claude_dir = tempfile("emptyclaude"),
                       memory_dir = NULL)

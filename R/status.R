@@ -11,7 +11,7 @@
 #' @return A list with components: terms, promoted, relations, suggestions,
 #'   relation_types.
 #' @export
-ont_status <- function(db_path = NULL, vault_path = NULL) {
+status <- function(db_path = NULL, vault_path = NULL) {
   db <- resolve_db(db_path, vault_path)
   con <- db_connect(db)
   on.exit(RSQLite::dbDisconnect(con))
@@ -34,12 +34,12 @@ ont_status <- function(db_path = NULL, vault_path = NULL) {
     suggestions = n_suggestions,
     relation_types = rel_types
   )
-  class(result) <- "ont_status"
+  class(result) <- "basalt_status"
   result
 }
 
 #' @export
-print.ont_status <- function(x, ...) {
+print.basalt_status <- function(x, ...) {
   cat("Ontology status:\n")
   cat(sprintf("  Terms:       %d (%d promoted)\n", x$terms, x$promoted))
   cat(sprintf("  Relations:   %d confirmed\n", x$relations))

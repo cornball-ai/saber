@@ -19,9 +19,9 @@
 #'   (default: \code{~/.cache/claude}).
 #' @param memory_dir Directory containing Claude Code project memory files
 #'   (default: \code{~/.claude/projects}). Set to NULL to skip.
-#' @return An \code{ont_status} object (invisibly).
+#' @return A \code{basalt_status} object (invisibly).
 #' @export
-ont_startup <- function(scan_dir = path.expand("~"),
+startup <- function(scan_dir = path.expand("~"),
                         db_dir = file.path(path.expand("~"), ".cache", "basalt"),
                         claude_dir = file.path(path.expand("~"), ".cache", "claude"),
                         memory_dir = file.path(path.expand("~"), ".claude", "projects")) {
@@ -120,7 +120,7 @@ ont_startup <- function(scan_dir = path.expand("~"),
   }
 
   # Index the vault (picks up typed links from basalt.md and annotation files)
-  ont_index(vault_dir)
+  index_vault(vault_dir)
 
   # Now add auto-terms and DESCRIPTION relations directly to the DB
   dbfile <- db_path(vault_dir)
@@ -169,7 +169,7 @@ ont_startup <- function(scan_dir = path.expand("~"),
   message(sprintf("Indexed %d project(s), %d dependency relation(s). Instructions written to %s",
                   length(project_names), n_deps, file.path(claude_dir, "CLAUDE.md")))
 
-  invisible(ont_status(vault_path = vault_dir))
+  invisible(status(vault_path = vault_dir))
 }
 
 #' Write Claude Code usage instructions
@@ -198,14 +198,14 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "library(basalt)",
     "",
     "# Check what's indexed",
-    sprintf("ont_status(db_path = \"%s\")", db_path),
+    sprintf("basalt::status(db_path = \"%s\")", db_path),
     "",
     "# Query relationships",
-    sprintf("ont_query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")", db_path),
-    sprintf("ont_query(\"whisper\", \"uses\", \"ancestors\", db_path = \"%s\")", db_path),
+    sprintf("basalt::query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")", db_path),
+    sprintf("basalt::query(\"whisper\", \"uses\", \"ancestors\", db_path = \"%s\")", db_path),
     "",
     "# Rebuild the index after project changes",
-    "ont_startup()",
+    "basalt::startup()",
     "```",
     "",
     "## Adding terms and relations",
@@ -214,10 +214,10 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "",
     "```r",
     "# Add terms",
-    sprintf("ont_add(terms = c(\"transformer\", \"attention\"), vault_path = \"%s\")", vault_path),
+    sprintf("basalt::add(terms = c(\"transformer\", \"attention\"), vault_path = \"%s\")", vault_path),
     "",
     "# Add relations",
-    "ont_add(",
+    "basalt::add(",
     "  relations = data.frame(",
     "    subject = c(\"whisper\", \"transformer\"),",
     "    relation_type = c(\"is_a\", \"uses\"),",
@@ -233,9 +233,9 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "## Shell usage",
     "",
     "```bash",
-    sprintf("r -e 'basalt::ont_query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")'", db_path),
-    "r -e 'basalt::ont_startup()'",
-    sprintf("r -e 'basalt::ont_status(db_path = \"%s\")'", db_path),
+    sprintf("r -e 'basalt::query(\"torch\", \"uses\", \"descendants\", db_path = \"%s\")'", db_path),
+    "r -e 'basalt::startup()'",
+    sprintf("r -e 'basalt::status(db_path = \"%s\")'", db_path),
     "```",
     "",
     "## The suggest/confirm loop",
@@ -243,7 +243,7 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "basalt can propose typed relations from untyped wikilinks:",
     "",
     "```r",
-    sprintf("ont_suggest(\"%s\")", vault_path),
+    sprintf("basalt::suggest(\"%s\")", vault_path),
     "```",
     "",
     "Suggestions are written to the database with `confirmed = FALSE`.",
@@ -254,13 +254,13 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "When Troy corrects a relationship (e.g., \"that's not is_a, that's uses\"):",
     "",
     "1. Edit the annotation file in ~/.cache/basalt/annotations/",
-    "2. Run `ont_startup()` to pick up the change",
+    "2. Run `basalt::startup()` to pick up the change",
     "3. Do NOT manually patch the SQLite database",
     "",
     "## Promoting terms",
     "",
     "```r",
-    sprintf("ont_promote(\"term_name\", \"%s\")", vault_path),
+    sprintf("basalt::promote(\"term_name\", \"%s\")", vault_path),
     "```",
     "",
     "Only do this when Troy asks. Never auto-promote.",
@@ -268,7 +268,7 @@ write_claude_instructions <- function(claude_dir, db_dir) {
     "## OBO export",
     "",
     "```r",
-    sprintf("ont_emit_obo(db_path = \"%s\", outfile = \"ontology.obo\")", db_path),
+    sprintf("basalt::emit_obo(db_path = \"%s\", outfile = \"ontology.obo\")", db_path),
     "```"
   )
 

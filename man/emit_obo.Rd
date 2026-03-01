@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_emit_obo}
-\alias{ont_emit_obo}
+\name{emit_obo}
+\alias{emit_obo}
 \title{Emit OBO format}
 \usage{
-ont_emit_obo(db_path = NULL, outfile = NULL, vault_path = NULL)
+emit_obo(db_path = NULL, outfile = NULL, vault_path = NULL)
 }
 \arguments{
 \item{db_path}{Path to the SQLite database.}

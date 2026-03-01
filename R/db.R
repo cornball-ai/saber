@@ -18,7 +18,7 @@ db_path <- function(vault_path) {
 #' @noRd
 db_connect <- function(path, create = FALSE) {
   if (!create && !file.exists(path)) {
-    stop("Database not found: ", path, ". Run ont_index() first.")
+    stop("Database not found: ", path, ". Run index_vault() first.")
   }
   if (create) {
     dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)

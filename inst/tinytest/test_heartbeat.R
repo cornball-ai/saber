@@ -26,7 +26,7 @@ fake_ann <- tempfile("annotations")
 dir.create(fake_ann)
 writeLines(c(
   "---",
-  "source: ont_add",
+  "source: basalt::add",
   "---",
   "## Terms",
   "- alpha"
@@ -36,7 +36,7 @@ writeLines(c(
 
 briefs <- tempfile("briefs")
 
-text <- ont_heartbeat(
+text <- heartbeat(
   scan_dir = fake_home,
   briefs_dir = briefs,
   annotations_dir = fake_ann
@@ -61,7 +61,7 @@ empty_home <- tempfile("empty_home")
 dir.create(empty_home)
 empty_briefs <- tempfile("empty_briefs")
 
-text2 <- ont_heartbeat(
+text2 <- heartbeat(
   scan_dir = empty_home,
   briefs_dir = empty_briefs,
   annotations_dir = NULL

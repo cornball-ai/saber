@@ -13,9 +13,9 @@
 #' @param vault_path Path to the vault (used to derive db_path if db_path is NULL).
 #' @return A data.frame with columns: id, name, distance.
 #' @export
-ont_query <- function(term, relation, direction = c("ancestors", "descendants",
-                                                     "siblings"),
-                      db_path = NULL, vault_path = NULL) {
+query <- function(term, relation, direction = c("ancestors", "descendants",
+                                                 "siblings"),
+                  db_path = NULL, vault_path = NULL) {
   direction <- match.arg(direction)
   db <- resolve_db(db_path, vault_path)
   con <- db_connect(db)

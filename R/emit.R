@@ -10,7 +10,7 @@
 #' @param vault_path Path to the vault (used to derive db_path if db_path is NULL).
 #' @return The output path (invisibly), or NULL if written to stdout.
 #' @export
-ont_emit_obo <- function(db_path = NULL, outfile = NULL, vault_path = NULL) {
+emit_obo <- function(db_path = NULL, outfile = NULL, vault_path = NULL) {
   db <- resolve_db(db_path, vault_path)
   con <- db_connect(db)
   on.exit(RSQLite::dbDisconnect(con))

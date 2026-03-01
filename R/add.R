@@ -15,7 +15,7 @@
 #'   NULL to skip writing annotations. Default: \code{~/.cache/basalt/annotations}.
 #' @return A list with counts of terms and relations added (invisibly).
 #' @export
-ont_add <- function(terms = NULL, relations = NULL,
+add <- function(terms = NULL, relations = NULL,
                     db_path = NULL, vault_path = NULL,
                     annotations_dir = file.path(path.expand("~"),
                                                 ".cache", "basalt",
@@ -84,7 +84,7 @@ write_annotation <- function(annotations_dir, terms, relations) {
 
   lines <- c(
     "---",
-    "source: ont_add",
+    "source: basalt::add",
     sprintf("created: %s", Sys.time()),
     "---"
   )

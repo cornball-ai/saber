@@ -33,9 +33,9 @@ writeLines(c(
   "It links to [[Machine Learning]] though."
 ), file.path(vault, "Random Note.md"))
 
-# --- ont_index ---
+# --- index_vault ---
 
-dbfile <- ont_index(vault)
+dbfile <- index_vault(vault)
 expect_true(file.exists(dbfile))
 
 con <- RSQLite::dbConnect(RSQLite::SQLite(), dbfile)
@@ -68,7 +68,7 @@ expect_true(nrow(files) >= 2L)
 RSQLite::dbDisconnect(con)
 
 # --- Incremental re-index (no changes) ---
-dbfile2 <- ont_index(vault)
+dbfile2 <- index_vault(vault)
 expect_equal(dbfile, dbfile2)
 
 # --- Re-index after change ---
@@ -80,7 +80,7 @@ writeLines(c(
   "is_a:: [[Neural Networks]]"
 ), file.path(vault, "Deep Learning.md"))
 
-ont_index(vault)
+index_vault(vault)
 con <- RSQLite::dbConnect(RSQLite::SQLite(), dbfile)
 terms2 <- RSQLite::dbGetQuery(con, "SELECT * FROM terms ORDER BY name")
 expect_true("Deep Learning" %in% terms2$name)

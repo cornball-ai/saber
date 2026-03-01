@@ -14,7 +14,7 @@ writeLines(c(
   "# whisper"
 ), file.path(vault, "whisper.md"))
 
-ont_index(vault)
+index_vault(vault)
 
 # Add terms and relations directly
 db <- file.path(vault, ".ontolite", "index.db")
@@ -75,7 +75,7 @@ system(sprintf("git -C '%s' commit -q -m 'initial commit'", fake_repo))
 
 briefs <- tempfile("briefs")
 
-text <- ont_briefing(
+text <- briefing(
   project = "whisper",
   vault_path = vault,
   briefs_dir = briefs,
@@ -103,7 +103,7 @@ expect_true(file.exists(file.path(briefs, "whisper.md")))
 
 # --- Test with unknown project ---
 
-text2 <- ont_briefing(
+text2 <- briefing(
   project = "nonexistent",
   vault_path = vault,
   briefs_dir = briefs,

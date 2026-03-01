@@ -11,7 +11,7 @@
 #' @param prefix ID prefix (default "ONTO").
 #' @return The new ID (invisibly).
 #' @export
-ont_promote <- function(term, vault_path, prefix = "ONTO") {
+promote <- function(term, vault_path, prefix = "ONTO") {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
   dbfile <- db_path(vault_path)
   con <- db_connect(dbfile)

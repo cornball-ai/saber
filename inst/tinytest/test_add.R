@@ -14,13 +14,13 @@ writeLines(c(
   "# Existing Term"
 ), file.path(vault, "Existing Term.md"))
 
-ont_index(vault)
+index_vault(vault)
 
 annotations_dir <- tempfile("annotations")
 
 # --- Test adding terms ---
 
-res <- ont_add(
+res <- add(
   terms = c("alpha", "beta", "gamma"),
   vault_path = vault,
   annotations_dir = annotations_dir
@@ -46,7 +46,7 @@ rels_df <- data.frame(
   stringsAsFactors = FALSE
 )
 
-res2 <- ont_add(
+res2 <- add(
   relations = rels_df,
   vault_path = vault,
   annotations_dir = annotations_dir
@@ -74,7 +74,7 @@ expect_true(length(ann_files) >= 1L)
 
 # --- Test duplicate inserts are ignored ---
 
-res3 <- ont_add(
+res3 <- add(
   terms = c("alpha", "new_term"),
   relations = rels_df,
   vault_path = vault,
@@ -89,7 +89,7 @@ expect_equal(res3$relations, 0L)
 # --- Test bad relations input ---
 
 expect_error(
-  ont_add(relations = data.frame(a = 1, b = 2), vault_path = vault,
+  add(relations = data.frame(a = 1, b = 2), vault_path = vault,
           annotations_dir = NULL),
   "subject, relation_type, object"
 )
