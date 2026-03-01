@@ -14,11 +14,9 @@
 #' @export
 query <- function(term, relation,
                   direction = c("ancestors", "descendants", "siblings"),
-                  vault_path = NULL) {
+                  vault_path = file.path(tools::R_user_dir("basalt", "cache"),
+                                        "index")) {
     direction <- match.arg(direction)
-    if (is.null(vault_path)) {
-        stop("vault_path must be provided.")
-    }
     idx <- load_index(vault_path)
 
     term_id <- resolve_term(idx$terms, term)

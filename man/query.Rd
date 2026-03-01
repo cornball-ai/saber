@@ -4,7 +4,7 @@
 \title{Query the ontology graph}
 \usage{
 query(term, relation, direction = c("ancestors", "descendants", "siblings"),
-      vault_path = NULL)
+      vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"))
 }
 \arguments{
 \item{term}{Term name or ID to start from.}

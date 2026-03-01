@@ -9,10 +9,9 @@
 #' @param outfile Path to write the OBO file. If NULL, writes to stdout.
 #' @return The output path (invisibly), or NULL if written to stdout.
 #' @export
-emit_obo <- function(vault_path = NULL, outfile = NULL) {
-    if (is.null(vault_path)) {
-        stop("vault_path must be provided.")
-    }
+emit_obo <- function(vault_path = file.path(tools::R_user_dir("basalt", "cache"),
+                                            "index"),
+                     outfile = NULL) {
     idx <- load_index(vault_path)
 
     terms <- idx$terms

@@ -9,10 +9,8 @@
 #' @param vault_path Path to the vault.
 #' @return A list with class \code{basalt_status}.
 #' @export
-status <- function(vault_path = NULL) {
-    if (is.null(vault_path)) {
-        stop("vault_path must be provided.")
-    }
+status <- function(vault_path = file.path(tools::R_user_dir("basalt", "cache"),
+                                         "index")) {
     idx <- load_index(vault_path)
 
     confirmed <- idx$relations[idx$relations$confirmed == 1L,, drop = FALSE]

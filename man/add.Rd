@@ -3,7 +3,8 @@
 \alias{add}
 \title{Add terms and relations programmatically}
 \usage{
-add(terms = NULL, relations = NULL, vault_path = NULL,
+add(terms = NULL, relations = NULL,
+    vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
     annotations_dir = file.path(tools::R_user_dir("basalt", "cache"), "annotations"))
 }
 \arguments{

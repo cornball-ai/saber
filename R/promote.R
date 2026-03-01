@@ -11,7 +11,10 @@
 #' @param prefix ID prefix (default "ONTO").
 #' @return The new ID (invisibly).
 #' @export
-promote <- function(term, vault_path, prefix = "ONTO") {
+promote <- function(term,
+                    vault_path = file.path(tools::R_user_dir("basalt", "cache"),
+                                           "index"),
+                    prefix = "ONTO") {
     vault_path <- normalizePath(vault_path, mustWork = TRUE)
     idx <- load_index(vault_path)
 

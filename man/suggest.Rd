@@ -3,7 +3,7 @@
 \alias{suggest}
 \title{Suggest typed relations}
 \usage{
-suggest(vault_path)
+suggest(vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"))
 }
 \arguments{
 \item{vault_path}{Path to the markdown vault directory.}

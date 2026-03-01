@@ -3,7 +3,7 @@
 \alias{status}
 \title{Ontology status summary}
 \usage{
-status(vault_path = NULL)
+status(vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"))
 }
 \arguments{
 \item{vault_path}{Path to the vault.}

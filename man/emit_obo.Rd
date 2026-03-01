@@ -3,7 +3,8 @@
 \alias{emit_obo}
 \title{Emit OBO format}
 \usage{
-emit_obo(vault_path = NULL, outfile = NULL)
+emit_obo(vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
+         outfile = NULL)
 }
 \arguments{
 \item{vault_path}{Path to the vault.}

@@ -3,7 +3,9 @@
 \alias{promote}
 \title{Promote a term with a stable ID}
 \usage{
-promote(term, vault_path, prefix = "ONTO")
+promote(term,
+        vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
+        prefix = "ONTO")
 }
 \arguments{
 \item{term}{Term name to promote.}
