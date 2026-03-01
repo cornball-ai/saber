@@ -6,14 +6,13 @@ Authors@R: person("Troy", "Hernandez", role = c("aut", "cre"),
     email = "troy@cornball.ai",
     comment = c(ORCID = "0009-0005-4248-604X"))
 Description: Maintains a live ontology derived from a markdown vault with
-    'YAML' frontmatter and typed links. Parses markdown files into a 'SQLite'
+    'YAML' frontmatter and typed links. Parses markdown files into a TSV
     index, supports graph traversal queries, suggests typed relations from
     untyped links, and emits OBO format snapshots.
 License: Apache License (>= 2)
 URL: https://github.com/cornball-ai/basalt
 BugReports: https://github.com/cornball-ai/basalt/issues
 Imports:
-    RSQLite,
     yaml
 Suggests:
     tinytest

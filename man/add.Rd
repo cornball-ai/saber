@@ -1,24 +1,17 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_add}
-\alias{ont_add}
+\name{add}
+\alias{add}
 \title{Add terms and relations programmatically}
 \usage{
-ont_add(
-  terms = NULL,
-  relations = NULL,
-  db_path = NULL,
-  vault_path = NULL,
-  annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations")
-)
+add(terms = NULL, relations = NULL, vault_path = NULL,
+    annotations_dir = file.path(path.expand("~"), ".cache", "basalt", "annotations"))
 }
 \arguments{
 \item{terms}{Character vector of term names to add.}
 
 \item{relations}{A data.frame with columns: subject, relation_type, object.}
 
-\item{db_path}{Path to the SQLite database.}
-
-\item{vault_path}{Path to the vault (used to derive db_path if db_path is NULL).}
+\item{vault_path}{Path to the vault.}
 
 \item{annotations_dir}{Directory for persistent annotation files. Set to
 NULL to skip writing annotations. Default: \code{~/.cache/basalt/annotations}.}
@@ -31,6 +24,6 @@ Bulk-insert terms and relations into the ontology, with
   optional persistent annotation files.
 Add terms and relations to the ontology
 
-Insert terms and/or relations directly into the SQLite index. Optionally
+Insert terms and/or relations directly into the index. Optionally
 writes a markdown annotation file to persist additions across re-indexes.
 }

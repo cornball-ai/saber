@@ -84,51 +84,46 @@ writeLines(c(
   "Key insight: uses RSQLite for everything."
 ), file.path(fake_claude, "MEMORY.md"))
 
-# --- Test ont_startup ---
+# --- Test startup ---
 
 cache_dir <- tempfile("cache")
 claude_dir <- file.path(cache_dir, "claude")
 
-st <- ont_startup(scan_dir = fake_home,
+st <- startup(scan_dir = fake_home,
                   db_dir = file.path(cache_dir, "basalt"),
                   claude_dir = claude_dir,
                   memory_dir = file.path(fake_home, ".claude", "projects"))
 
 # Status should be returned
-expect_true(inherits(st, "ont_status"))
+expect_true(inherits(st, "basalt_status"))
 
-# Database should exist
-db <- file.path(cache_dir, "basalt", "vault", ".ontolite", "index.db")
-expect_true(file.exists(db))
+# Index directory should exist
+idx_dir <- file.path(cache_dir, "basalt", "vault", ".ontolite")
+expect_true(dir.exists(idx_dir))
 
 # --- Auto-term registration ---
-con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
-
-terms <- RSQLite::dbGetQuery(con, "SELECT id, name FROM terms ORDER BY name")
+idx <- basalt:::load_index(file.path(cache_dir, "basalt", "vault"))
 
 # All 5 projects should be terms
-expect_true("mypackage" %in% terms$name)
-expect_true("otherapp" %in% terms$name)
-expect_true("agentproject" %in% terms$name)
-expect_true("simpleproject" %in% terms$name)
-expect_true("readmeonly" %in% terms$name)
+expect_true("mypackage" %in% idx$terms$name)
+expect_true("otherapp" %in% idx$terms$name)
+expect_true("agentproject" %in% idx$terms$name)
+expect_true("simpleproject" %in% idx$terms$name)
+expect_true("readmeonly" %in% idx$terms$name)
 
 # --- DESCRIPTION dependency relations ---
-rels <- RSQLite::dbGetQuery(con,
-  "SELECT * FROM relations WHERE source = 'auto' ORDER BY subject_id, object_id")
+auto_rels <- idx$relations[idx$relations$source == "auto", , drop = FALSE]
 
 # mypackage uses RSQLite and yaml
-mp_deps <- rels[rels$subject_id == "mypackage", ]
+mp_deps <- auto_rels[auto_rels$subject_id == "mypackage", ]
 expect_true("RSQLite" %in% mp_deps$object_id)
 expect_true("yaml" %in% mp_deps$object_id)
 expect_true(all(mp_deps$relation_type == "uses"))
 
 # otherapp uses mypackage and jsonlite
-oa_deps <- rels[rels$subject_id == "otherapp", ]
+oa_deps <- auto_rels[auto_rels$subject_id == "otherapp", ]
 expect_true("mypackage" %in% oa_deps$object_id)
 expect_true("jsonlite" %in% oa_deps$object_id)
-
-RSQLite::dbDisconnect(con)
 
 # --- README.md should be in vault ---
 vault_files <- list.files(file.path(cache_dir, "basalt", "vault"),
@@ -145,14 +140,14 @@ claude_md <- file.path(claude_dir, "CLAUDE.md")
 expect_true(file.exists(claude_md))
 
 text <- paste(readLines(claude_md), collapse = "\n")
-expect_true(grepl("ont_add", text))
-expect_true(grepl("ont_query", text))
+expect_true(grepl("basalt::add", text))
+expect_true(grepl("basalt::query", text))
 expect_true(grepl("correction protocol", text, ignore.case = TRUE))
 
 # --- Test with empty directory ---
 empty_dir <- tempfile("empty")
 dir.create(empty_dir)
-result <- ont_startup(scan_dir = empty_dir,
+result <- startup(scan_dir = empty_dir,
                       db_dir = tempfile("emptycache"),
                       claude_dir = tempfile("emptyclaude"),
                       memory_dir = NULL)

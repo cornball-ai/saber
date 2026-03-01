@@ -33,43 +33,38 @@ writeLines(c(
   "It links to [[Machine Learning]] though."
 ), file.path(vault, "Random Note.md"))
 
-# --- ont_index ---
+# --- index_vault ---
 
-dbfile <- ont_index(vault)
-expect_true(file.exists(dbfile))
+idx_dir <- index_vault(vault)
+expect_true(dir.exists(idx_dir))
 
-con <- RSQLite::dbConnect(RSQLite::SQLite(), dbfile)
+idx <- basalt:::load_index(vault)
 
 # Check terms were created
-terms <- RSQLite::dbGetQuery(con, "SELECT * FROM terms ORDER BY name")
-expect_true(nrow(terms) >= 2L)
-expect_true("Machine Learning" %in% terms$name)
-expect_true("Neural Networks" %in% terms$name)
+expect_true(nrow(idx$terms) >= 2L)
+expect_true("Machine Learning" %in% idx$terms$name)
+expect_true("Neural Networks" %in% idx$terms$name)
 
 # ML should be promoted (has id:)
-ml <- terms[terms$name == "Machine Learning", ]
+ml <- idx$terms[idx$terms$name == "Machine Learning", ]
 expect_equal(ml$promoted, 1L)
 expect_equal(ml$id, "ONTO:0000001")
 
 # NN should not be promoted
-nn <- terms[terms$name == "Neural Networks", ]
+nn <- idx$terms[idx$terms$name == "Neural Networks", ]
 expect_equal(nn$promoted, 0L)
 
 # Check relations
-rels <- RSQLite::dbGetQuery(con, "SELECT * FROM relations")
-expect_true(nrow(rels) >= 1L)
-isa <- rels[rels$relation_type == "is_a", ]
+expect_true(nrow(idx$relations) >= 1L)
+isa <- idx$relations[idx$relations$relation_type == "is_a", ]
 expect_true(nrow(isa) >= 1L)
 
 # Check files tracking
-files <- RSQLite::dbGetQuery(con, "SELECT * FROM files")
-expect_true(nrow(files) >= 2L)
-
-RSQLite::dbDisconnect(con)
+expect_true(nrow(idx$files) >= 2L)
 
 # --- Incremental re-index (no changes) ---
-dbfile2 <- ont_index(vault)
-expect_equal(dbfile, dbfile2)
+idx_dir2 <- index_vault(vault)
+expect_equal(idx_dir, idx_dir2)
 
 # --- Re-index after change ---
 writeLines(c(
@@ -80,10 +75,8 @@ writeLines(c(
   "is_a:: [[Neural Networks]]"
 ), file.path(vault, "Deep Learning.md"))
 
-ont_index(vault)
-con <- RSQLite::dbConnect(RSQLite::SQLite(), dbfile)
-terms2 <- RSQLite::dbGetQuery(con, "SELECT * FROM terms ORDER BY name")
-expect_true("Deep Learning" %in% terms2$name)
-RSQLite::dbDisconnect(con)
+index_vault(vault)
+idx2 <- basalt:::load_index(vault)
+expect_true("Deep Learning" %in% idx2$terms$name)
 
 unlink(vault, recursive = TRUE)

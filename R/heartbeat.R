@@ -14,7 +14,7 @@
 #' @param days Number of days to look back for git history.
 #' @return The heartbeat text (character string), returned invisibly.
 #' @export
-ont_heartbeat <- function(scan_dir = path.expand("~"),
+heartbeat <- function(scan_dir = path.expand("~"),
                           briefs_dir = file.path(path.expand("~"),
                                                  ".cache", "basalt", "briefs"),
                           annotations_dir = file.path(path.expand("~"),

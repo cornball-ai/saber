@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_promote}
-\alias{ont_promote}
+\name{promote}
+\alias{promote}
 \title{Promote a term with a stable ID}
 \usage{
-ont_promote(term, vault_path, prefix = "ONTO")
+promote(term, vault_path, prefix = "ONTO")
 }
 \arguments{
 \item{term}{Term name to promote.}

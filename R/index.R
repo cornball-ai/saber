@@ -1,64 +1,54 @@
 #' @title Build or update the ontology index
-#' @description Parse markdown files from a vault and populate the SQLite index.
+#' @description Parse markdown files from a vault and populate the index.
 
 #' Build or update the ontology index from a markdown vault
 #'
 #' Parses all markdown files in the vault, extracts frontmatter and typed
-#' links, and writes them to the SQLite index. Performs incremental updates
+#' links, and writes them to the index. Performs incremental updates
 #' based on file hashes.
 #'
 #' @param vault_path Path to the markdown vault directory.
-#' @return The database path (invisibly).
+#' @return The index directory path (invisibly).
 #' @export
-ont_index <- function(vault_path) {
+index_vault <- function(vault_path) {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
-  dbfile <- db_path(vault_path)
-  con <- db_connect(dbfile, create = TRUE)
-  on.exit(RSQLite::dbDisconnect(con))
-  db_init(con)
+  idx <- load_index(vault_path, create = TRUE)
 
   md_files <- list.files(vault_path, pattern = "\\.md$", recursive = TRUE,
                          full.names = TRUE)
-  # Exclude files in .ontolite directory
   md_files <- md_files[!grepl("^\\.ontolite", basename(dirname(md_files)))]
 
-  # Check which files changed
-  existing <- RSQLite::dbGetQuery(con, "SELECT filepath, hash FROM files")
   rel_files <- make_relative(md_files, vault_path)
 
   for (i in seq_along(md_files)) {
     fp <- md_files[i]
     rel <- rel_files[i]
     h <- file_hash(fp)
-    prev <- existing$hash[existing$filepath == rel]
+    prev <- idx$files$hash[idx$files$filepath == rel]
     if (length(prev) == 1L && prev == h) next
-    index_one_file(con, fp, rel, h)
+    idx <- index_one_file(idx, fp, rel, h)
   }
 
   # Remove entries for deleted files
-  gone <- setdiff(existing$filepath, rel_files)
+  gone <- setdiff(idx$files$filepath, rel_files)
   if (length(gone) > 0L) {
-    placeholders <- paste(rep("?", length(gone)), collapse = ", ")
-    RSQLite::dbExecute(con, sprintf("DELETE FROM terms WHERE filepath IN (%s)",
-                                    placeholders), params = as.list(gone))
-    RSQLite::dbExecute(con, sprintf("DELETE FROM files WHERE filepath IN (%s)",
-                                    placeholders), params = as.list(gone))
+    idx$terms <- idx$terms[!idx$terms$filepath %in% gone, , drop = FALSE]
+    idx$files <- idx$files[!idx$files$filepath %in% gone, , drop = FALSE]
   }
 
-  # Ensure typed-link targets exist as terms (even without their own file)
-  ensure_link_targets(con)
+  idx <- ensure_link_targets(idx)
 
-  invisible(dbfile)
+  save_index(idx, vault_path)
+  invisible(index_dir(vault_path))
 }
 
 #' Index a single markdown file
 #' @noRd
-index_one_file <- function(con, filepath, rel_path, hash) {
+index_one_file <- function(idx, filepath, rel_path, hash) {
   fm <- parse_frontmatter(filepath)
   links <- parse_typed_links(filepath)
   name <- name_from_path(filepath)
 
-  # Determine if this is a term
   is_term <- !is.null(fm[["id"]]) ||
     identical(fm[["type"]], "term") ||
     nrow(links) > 0L
@@ -66,67 +56,79 @@ index_one_file <- function(con, filepath, rel_path, hash) {
   if (is_term) {
     term_id <- if (!is.null(fm[["id"]])) fm[["id"]] else name
     aliases <- if (!is.null(fm[["aliases"]])) {
-      paste0("[", paste(sprintf('"%s"', fm[["aliases"]]), collapse = ", "), "]")
+      paste(fm[["aliases"]], collapse = "|")
     } else {
-      "[]"
+      ""
     }
     promoted <- as.integer(!is.null(fm[["id"]]))
 
-    RSQLite::dbExecute(con,
-      "INSERT INTO terms (id, name, filepath, aliases, promoted, updated_at)
-       VALUES (?, ?, ?, ?, ?, strftime('%Y-%m-%dT%H:%M:%S', 'now'))
-       ON CONFLICT(id) DO UPDATE SET
-         name = excluded.name,
-         filepath = excluded.filepath,
-         aliases = excluded.aliases,
-         promoted = excluded.promoted,
-         updated_at = excluded.updated_at",
-      params = list(term_id, name, rel_path, aliases, promoted))
+    new_term <- data.frame(
+      id = term_id, name = name, filepath = rel_path,
+      aliases = aliases, promoted = promoted, updated_at = now_ts(),
+      stringsAsFactors = FALSE
+    )
 
-    # Remove old relations from this subject and re-insert
-    RSQLite::dbExecute(con,
-      "DELETE FROM relations WHERE subject_id = ? AND source = 'inline'",
-      params = list(term_id))
+    # Upsert: remove old, add new
+    idx$terms <- idx$terms[idx$terms$id != term_id, , drop = FALSE]
+    idx$terms <- rbind(idx$terms, new_term)
+
+    # Remove old inline relations from this subject, re-insert
+    idx$relations <- idx$relations[!(idx$relations$subject_id == term_id &
+                                     idx$relations$source == "inline"),
+                                   , drop = FALSE]
 
     if (nrow(links) > 0L) {
-      for (j in seq_len(nrow(links))) {
-        RSQLite::dbExecute(con,
-          "INSERT OR IGNORE INTO relations
-             (subject_id, relation_type, object_id, confirmed, source)
-           VALUES (?, ?, ?, 1, 'inline')",
-          params = list(term_id, links$relation_type[j], links$target[j]))
-      }
+      new_rels <- data.frame(
+        subject_id = rep(term_id, nrow(links)),
+        relation_type = links$relation_type,
+        object_id = links$target,
+        confirmed = 1L,
+        source = "inline",
+        stringsAsFactors = FALSE
+      )
+      idx$relations <- rbind(idx$relations, new_rels)
     }
   }
 
   # Update file tracking
-  RSQLite::dbExecute(con,
-    "INSERT INTO files (filepath, hash, parsed_at)
-     VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%S', 'now'))
-     ON CONFLICT(filepath) DO UPDATE SET
-       hash = excluded.hash,
-       parsed_at = excluded.parsed_at",
-    params = list(rel_path, hash))
+  idx$files <- idx$files[idx$files$filepath != rel_path, , drop = FALSE]
+  idx$files <- rbind(idx$files, data.frame(
+    filepath = rel_path, hash = hash, parsed_at = now_ts(),
+    stringsAsFactors = FALSE
+  ))
+
+  idx
 }
 
 #' Resolve relation object_ids to actual term IDs where possible,
 #' then ensure remaining targets exist as stub terms.
 #' @noRd
-ensure_link_targets <- function(con) {
+ensure_link_targets <- function(idx) {
   # Resolve object_ids that match a term name to the term's actual id
-  RSQLite::dbExecute(con,
-    "UPDATE relations SET object_id = (
-       SELECT t.id FROM terms t WHERE t.name = relations.object_id
-     )
-     WHERE object_id NOT IN (SELECT id FROM terms)
-       AND object_id IN (SELECT name FROM terms)")
+  unresolved <- !idx$relations$object_id %in% idx$terms$id
+  if (any(unresolved)) {
+    name_lookup <- idx$terms[, c("id", "name"), drop = FALSE]
+    for (i in which(unresolved)) {
+      obj <- idx$relations$object_id[i]
+      match_row <- name_lookup[name_lookup$name == obj, , drop = FALSE]
+      if (nrow(match_row) > 0L) {
+        idx$relations$object_id[i] <- match_row$id[1]
+      }
+    }
+  }
 
   # Create stub terms for targets that still don't exist
-  RSQLite::dbExecute(con,
-    "INSERT OR IGNORE INTO terms (id, name, promoted)
-     SELECT DISTINCT object_id, object_id, 0
-     FROM relations
-     WHERE object_id NOT IN (SELECT id FROM terms)")
+  still_missing <- setdiff(idx$relations$object_id, idx$terms$id)
+  if (length(still_missing) > 0L) {
+    stubs <- data.frame(
+      id = still_missing, name = still_missing, filepath = NA_character_,
+      aliases = "", promoted = 0L, updated_at = now_ts(),
+      stringsAsFactors = FALSE
+    )
+    idx$terms <- rbind(idx$terms, stubs)
+  }
+
+  idx
 }
 
 #' Make paths relative to a base directory

@@ -1,13 +1,13 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_briefing}
-\alias{ont_briefing}
+\name{briefing}
+\alias{briefing}
 \title{Project briefing}
 \usage{
-ont_briefing(project = NULL,
-             vault_path = file.path(path.expand("~"), ".cache", "basalt", "vault"),
-             briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
-             memory_base = file.path(path.expand("~"), ".claude", "projects"),
-             scan_dir = path.expand("~"), max_memory_lines = 30L)
+briefing(project = NULL,
+         vault_path = file.path(path.expand("~"), ".cache", "basalt", "vault"),
+         briefs_dir = file.path(path.expand("~"), ".cache", "basalt", "briefs"),
+         memory_base = file.path(path.expand("~"), ".claude", "projects"),
+         scan_dir = path.expand("~"), max_memory_lines = 30L)
 }
 \arguments{
 \item{project}{Project name. If NULL, inferred from the current working

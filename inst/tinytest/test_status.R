@@ -21,10 +21,10 @@ writeLines(c(
   "is_a:: [[Machine Learning]]"
 ), file.path(vault, "Neural Networks.md"))
 
-ont_index(vault)
+index_vault(vault)
 
-st <- ont_status(vault_path = vault)
-expect_true(inherits(st, "ont_status"))
+st <- status(vault_path = vault)
+expect_true(inherits(st, "basalt_status"))
 expect_true(st$terms >= 2L)
 expect_true(st$promoted >= 1L)
 expect_true(st$relations >= 1L)

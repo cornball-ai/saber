@@ -21,10 +21,10 @@ writeLines(c(
   "is_a:: [[Machine Learning]]"
 ), file.path(vault, "Neural Networks.md"))
 
-ont_index(vault)
+index_vault(vault)
 
 # --- Promote a term ---
-new_id <- ont_promote("Neural Networks", vault)
+new_id <- promote("Neural Networks", vault)
 expect_true(grepl("^ONTO:", new_id))
 expect_equal(new_id, "ONTO:0000002")
 
@@ -32,19 +32,16 @@ expect_equal(new_id, "ONTO:0000002")
 lines <- readLines(file.path(vault, "Neural Networks.md"))
 expect_true(any(grepl("^id: ONTO:0000002", lines)))
 
-# Check the DB was updated
-con <- RSQLite::dbConnect(RSQLite::SQLite(),
-  file.path(vault, ".ontolite", "index.db"))
-row <- RSQLite::dbGetQuery(con,
-  "SELECT * FROM terms WHERE name = 'Neural Networks'")
+# Check the index was updated
+idx <- basalt:::load_index(vault)
+row <- idx$terms[idx$terms$name == "Neural Networks", ]
 expect_equal(row$id, "ONTO:0000002")
 expect_equal(row$promoted, 1L)
-RSQLite::dbDisconnect(con)
 
 # --- Already promoted ---
-expect_message(ont_promote("Neural Networks", vault), "already promoted")
+expect_message(promote("Neural Networks", vault), "already promoted")
 
 # --- Unknown term ---
-expect_error(ont_promote("Nonexistent", vault))
+expect_error(promote("Nonexistent", vault))
 
 unlink(vault, recursive = TRUE)

@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
-\name{ont_suggest}
-\alias{ont_suggest}
+\name{suggest}
+\alias{suggest}
 \title{Suggest typed relations}
 \usage{
-ont_suggest(vault_path)
+suggest(vault_path)
 }
 \arguments{
 \item{vault_path}{Path to the markdown vault directory.}
@@ -18,5 +18,5 @@ Suggest typed relations from untyped links
 
 Examines untyped wikilinks and proposes typed relations based on
 heuristics: folder co-location, heading context, and link frequency.
-Suggestions are written to the database with \code{confirmed = FALSE}.
+Suggestions are written to the index with \code{confirmed = 0}.
 }

@@ -11,16 +11,12 @@
 #' @param prefix ID prefix (default "ONTO").
 #' @return The new ID (invisibly).
 #' @export
-ont_promote <- function(term, vault_path, prefix = "ONTO") {
+promote <- function(term, vault_path, prefix = "ONTO") {
   vault_path <- normalizePath(vault_path, mustWork = TRUE)
-  dbfile <- db_path(vault_path)
-  con <- db_connect(dbfile)
-  on.exit(RSQLite::dbDisconnect(con))
+  idx <- load_index(vault_path)
 
   # Find the term
-  row <- RSQLite::dbGetQuery(con,
-    "SELECT id, name, filepath, promoted FROM terms WHERE name = ? OR id = ?",
-    params = list(term, term))
+  row <- idx$terms[idx$terms$name == term | idx$terms$id == term, , drop = FALSE]
 
   if (nrow(row) == 0L) {
     stop("Term not found: ", term)
@@ -34,7 +30,7 @@ ont_promote <- function(term, vault_path, prefix = "ONTO") {
   }
 
   # Generate next ID
-  new_id <- next_id(con, prefix)
+  new_id <- next_id(idx, prefix)
 
   # Write ID into frontmatter
   filepath <- file.path(vault_path, row$filepath[1L])
@@ -42,20 +38,16 @@ ont_promote <- function(term, vault_path, prefix = "ONTO") {
 
   # Update index
   old_id <- row$id[1L]
-  RSQLite::dbExecute(con,
-    "UPDATE terms SET id = ?, promoted = 1,
-       updated_at = strftime('%Y-%m-%dT%H:%M:%S', 'now')
-     WHERE id = ?",
-    params = list(new_id, old_id))
+  i <- which(idx$terms$id == old_id)
+  idx$terms$id[i] <- new_id
+  idx$terms$promoted[i] <- 1L
+  idx$terms$updated_at[i] <- now_ts()
 
   # Update relations referencing old ID
+  idx$relations$subject_id[idx$relations$subject_id == old_id] <- new_id
+  idx$relations$object_id[idx$relations$object_id == old_id] <- new_id
 
-RSQLite::dbExecute(con,
-    "UPDATE relations SET subject_id = ? WHERE subject_id = ?",
-    params = list(new_id, old_id))
-  RSQLite::dbExecute(con,
-    "UPDATE relations SET object_id = ? WHERE object_id = ?",
-    params = list(new_id, old_id))
+  save_index(idx, vault_path)
 
   message("Promoted '", row$name[1L], "' -> ", new_id)
   invisible(new_id)
@@ -63,16 +55,16 @@ RSQLite::dbExecute(con,
 
 #' Generate the next ID
 #' @noRd
-next_id <- function(con, prefix) {
-  existing <- RSQLite::dbGetQuery(con,
-    "SELECT id FROM terms WHERE id LIKE ? AND promoted = 1",
-    params = list(paste0(prefix, ":%")))
+next_id <- function(idx, prefix) {
+  promoted <- idx$terms[idx$terms$promoted == 1L &
+                        grepl(paste0("^", prefix, ":"), idx$terms$id), ,
+                        drop = FALSE]
 
-  if (nrow(existing) == 0L) {
+  if (nrow(promoted) == 0L) {
     return(sprintf("%s:%07d", prefix, 1L))
   }
 
-  nums <- as.integer(sub("^[^:]+:", "", existing$id))
+  nums <- as.integer(sub("^[^:]+:", "", promoted$id))
   nums <- nums[!is.na(nums)]
   next_num <- if (length(nums) == 0L) 1L else max(nums) + 1L
   sprintf("%s:%07d", prefix, next_num)

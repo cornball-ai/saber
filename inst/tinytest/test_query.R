@@ -39,24 +39,24 @@ writeLines(c(
   "is_a:: [[Machine Learning]]"
 ), file.path(vault, "Random Forest.md"))
 
-ont_index(vault)
+index_vault(vault)
 
 # --- Ancestors ---
-anc <- ont_query("Deep Learning", "is_a", "ancestors", vault_path = vault)
+anc <- query("Deep Learning", "is_a", "ancestors", vault_path = vault)
 expect_true(nrow(anc) >= 2L)
 expect_true("Neural Networks" %in% anc$name)
 expect_true("Machine Learning" %in% anc$name)
 
 # --- Descendants ---
-desc <- ont_query("Machine Learning", "is_a", "descendants", vault_path = vault)
+desc <- query("Machine Learning", "is_a", "descendants", vault_path = vault)
 expect_true(nrow(desc) >= 2L)
 expect_true("Neural Networks" %in% desc$name)
 
 # --- Siblings ---
-sibs <- ont_query("Neural Networks", "is_a", "siblings", vault_path = vault)
+sibs <- query("Neural Networks", "is_a", "siblings", vault_path = vault)
 expect_true("Random Forest" %in% sibs$name)
 
 # --- Error: unknown term ---
-expect_error(ont_query("Nonexistent", "is_a", "ancestors", vault_path = vault))
+expect_error(query("Nonexistent", "is_a", "ancestors", vault_path = vault))
 
 unlink(vault, recursive = TRUE)
