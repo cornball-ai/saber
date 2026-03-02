@@ -10,7 +10,7 @@
 #' @return A list with class \code{basalt_status}.
 #' @export
 status <- function(vault_path = file.path(tools::R_user_dir("basalt", "cache"),
-                                         "index")) {
+        "index")) {
     idx <- load_index(vault_path)
 
     confirmed <- idx$relations[idx$relations$confirmed == 1L,, drop = FALSE]

@@ -14,8 +14,7 @@
 #' @export
 query <- function(term, relation,
                   direction = c("ancestors", "descendants", "siblings"),
-                  vault_path = file.path(tools::R_user_dir("basalt", "cache"),
-                                        "index")) {
+                  vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index")) {
     direction <- match.arg(direction)
     idx <- load_index(vault_path)
 
