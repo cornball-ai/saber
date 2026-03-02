@@ -15,10 +15,9 @@
 #' @return A list with counts of terms and relations added (invisibly).
 #' @export
 add <- function(terms = NULL, relations = NULL,
-                vault_path = file.path(tools::R_user_dir("basalt", "cache"),
-                                       "index"),
+                vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
                 annotations_dir = file.path(tools::R_user_dir("basalt", "cache"),
-                                            "annotations")) {
+        "annotations")) {
     idx <- load_index(vault_path)
 
     n_terms <- 0L

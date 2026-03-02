@@ -12,7 +12,7 @@
 #'   object, reason.
 #' @export
 suggest <- function(vault_path = file.path(tools::R_user_dir("basalt", "cache"),
-                                          "index")) {
+        "index")) {
     vault_path <- normalizePath(vault_path, mustWork = TRUE)
     idx <- load_index(vault_path)
 

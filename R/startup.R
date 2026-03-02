@@ -130,6 +130,8 @@ startup <- function(scan_dir = path.expand("~"),
 
     # Parse DESCRIPTION files for dependency relations
     n_deps <- 0L
+    dep_fields <- c(depends = "depends", imports = "imports",
+                    suggests = "suggests", links_to = "links_to")
     for (desc_fp in found_desc) {
         info <- parse_description(desc_fp)
         if (is.na(info$package)) {
@@ -137,20 +139,23 @@ startup <- function(scan_dir = path.expand("~"),
         }
         pname <- basename(dirname(desc_fp))
 
-        for (dep in info$imports) {
-            idx$relations <- rbind(idx$relations,
-                                   data.frame(subject_id = pname, relation_type = "uses",
-                    object_id = dep, confirmed = 1L, source = "auto",
-                    stringsAsFactors = FALSE))
-            # Ensure the dependency exists as a term
-            if (!dep %in% idx$terms$id) {
-                idx$terms <- rbind(idx$terms,
-                                   data.frame(id = dep, name = dep,
-                        filepath = NA_character_, aliases = "",
-                        promoted = 0L, updated_at = now_ts(),
-                        stringsAsFactors = FALSE))
+        for (i in seq_along(dep_fields)) {
+            field <- names(dep_fields)[i]
+            rel_type <- dep_fields[i]
+            for (dep in info[[field]]) {
+                idx$relations <- rbind(idx$relations,
+                                       data.frame(subject_id = pname, relation_type = rel_type,
+                        object_id = dep, confirmed = 1L,
+                        source = "auto", stringsAsFactors = FALSE))
+                if (!dep %in% idx$terms$id) {
+                    idx$terms <- rbind(idx$terms,
+                                       data.frame(id = dep, name = dep,
+                            filepath = NA_character_, aliases = "",
+                            promoted = 0L, updated_at = now_ts(),
+                            stringsAsFactors = FALSE))
+                }
+                n_deps <- n_deps + 1L
             }
-            n_deps <- n_deps + 1L
         }
     }
 
@@ -180,16 +185,17 @@ startup <- function(scan_dir = path.expand("~"),
     message(sprintf("Indexed %d project(s), %d dependency relation(s).",
                     length(project_names), n_deps))
 
-    claude_target <- file.path(
-        if (!is.null(claude_dir)) claude_dir
-        else file.path(path.expand("~"), ".cache", "claude"),
-        "CLAUDE.md"
-    )
+    claude_target <- file.path(if (!is.null(claude_dir)) {
+            claude_dir
+        } else {
+            file.path(path.expand("~"), ".cache", "claude")
+        }, "CLAUDE.md")
     if (!file.exists(claude_target) ||
         !identical(readLines(instructions_file, warn = FALSE),
                    readLines(claude_target, warn = FALSE))) {
         message("Instructions generated at: ", instructions_file)
-        message("To install: cp '", instructions_file, "' '", claude_target, "'")
+        message("To install: cp '", instructions_file, "' '", claude_target,
+                "'")
     }
 
     invisible(status(vault_path = index_path))
@@ -232,60 +238,47 @@ startup_subject <- function(fp, scan_dir, memory_dir) {
 write_claude_instructions <- function(outfile, index_path) {
     cache_dir <- dirname(index_path)
 
-    instructions <- c(
-        "# basalt: Project Ontology", "",
-        "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, README.md,",
-        "DESCRIPTION files, and Claude Code memory files across all projects.",
-        "Projects are auto-registered as terms. R package dependencies are",
-        "auto-inferred as `uses` relations.", "",
-        sprintf("Index: `%s`", index_path),
-        sprintf("Annotations: `%s`", file.path(cache_dir, "annotations")), "",
-        "All functions default to the standard index path. No need to pass",
-        "`vault_path` unless using a non-standard location.", "",
-        "## Quick reference", "", "```r",
-        "# Check what's indexed",
-        "basalt::status()", "",
-        "# Query relationships",
-        "basalt::query(\"torch\", \"uses\", \"descendants\")",
-        "basalt::query(\"whisper\", \"is_a\", \"ancestors\")", "",
-        "# Rebuild the index after project changes",
-        "basalt::startup()", "```", "",
-        "## Adding terms and relations", "",
-        "```r",
-        "# Add terms",
-        "basalt::add(terms = c(\"transformer\", \"attention\"))", "",
-        "# Add relations",
-        "basalt::add(",
-        "  relations = data.frame(",
-        "    subject = c(\"whisper\", \"transformer\"),",
-        "    relation_type = c(\"is_a\", \"uses\"),",
-        "    object = c(\"speech_to_text\", \"attention\")",
-        "  )",
-        ")", "```", "",
-        sprintf("Additions persist as markdown in `%s`.",
-                file.path(cache_dir, "annotations")), "",
-        "## Shell usage", "", "```bash",
-        "r -e 'basalt::query(\"torch\", \"uses\", \"descendants\")'",
-        "r -e 'basalt::status()'",
-        "r -e 'basalt::startup()'", "```", "",
-        "## The suggest/confirm loop", "",
-        "basalt can propose typed relations from untyped wikilinks:", "",
-        "```r",
-        "basalt::suggest()", "```", "",
-        "Suggestions are written to the index with `confirmed = 0`.",
-        "Do NOT treat unconfirmed suggestions as facts. Troy reviews them.", "",
-        "## Correction protocol", "",
-        "When Troy corrects a relationship (e.g., \"that's not is_a, that's uses\"):", "",
-        sprintf("1. Edit the annotation file in `%s`",
-                file.path(cache_dir, "annotations")),
-        "2. Run `basalt::startup()` to pick up the change",
-        "3. Do NOT manually patch the index files", "",
-        "## Promoting terms", "", "```r",
-        "basalt::promote(\"term_name\")", "```", "",
-        "Only do this when Troy asks. Never auto-promote.", "",
-        "## OBO export", "", "```r",
-        "basalt::emit_obo(outfile = \"ontology.obo\")", "```"
-    )
+    instructions <- c("# basalt: Project Ontology", "",
+                      "A unified ontology index built from CLAUDE.md, AGENT.md, fyi.md, README.md,", "DESCRIPTION files, and Claude Code memory files across all projects.",
+                      "Projects are auto-registered as terms. R package dependencies are", "auto-inferred as `depends`, `imports`, `suggests`, and `links_to` relations.",
+                      "", sprintf("Index: `%s`", index_path),
+                      sprintf("Annotations: `%s`", file.path(cache_dir, "annotations")), "",
+                      "All functions default to the standard index path. No need to pass", "`vault_path` unless using a non-standard location.",
+                      "", "## Quick reference", "", "```r",
+                      "# Check what's indexed", "basalt::status()", "",
+                      "# Query relationships",
+                      "basalt::query(\"torch\", \"uses\", \"descendants\")",
+                      "basalt::query(\"whisper\", \"is_a\", \"ancestors\")",
+                      "", "# Rebuild the index after project changes",
+                      "basalt::startup()", "```", "",
+                      "## Adding terms and relations", "", "```r",
+                      "# Add terms",
+                      "basalt::add(terms = c(\"transformer\", \"attention\"))",
+                      "", "# Add relations", "basalt::add(",
+                      "  relations = data.frame(",
+                      "    subject = c(\"whisper\", \"transformer\"),",
+                      "    relation_type = c(\"is_a\", \"uses\"),",
+                      "    object = c(\"speech_to_text\", \"attention\")",
+                      "  )", ")", "```", "",
+                      sprintf("Additions persist as markdown in `%s`.",
+                              file.path(cache_dir, "annotations")), "",
+                      "## Shell usage", "", "```bash",
+                      "r -e 'basalt::query(\"torch\", \"uses\", \"descendants\")'", "r -e 'basalt::status()'",
+                      "r -e 'basalt::startup()'", "```", "",
+                      "## The suggest/confirm loop", "",
+                      "basalt can propose typed relations from untyped wikilinks:", "",
+                      "```r", "basalt::suggest()", "```", "",
+                      "Suggestions are written to the index with `confirmed = 0`.", "Do NOT treat unconfirmed suggestions as facts. Troy reviews them.",
+                      "", "## Correction protocol", "",
+                      "When Troy corrects a relationship (e.g., \"that's not is_a, that's uses\"):", "",
+                      sprintf("1. Edit the annotation file in `%s`",
+                              file.path(cache_dir, "annotations")), "2. Run `basalt::startup()` to pick up the change",
+                      "3. Do NOT manually patch the index files", "",
+                      "## Promoting terms", "", "```r",
+                      "basalt::promote(\"term_name\")", "```", "",
+                      "Only do this when Troy asks. Never auto-promote.", "",
+                      "## OBO export", "", "```r",
+                      "basalt::emit_obo(outfile = \"ontology.obo\")", "```")
 
     writeLines(instructions, outfile)
 }
