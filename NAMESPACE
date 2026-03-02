@@ -1,8 +1,10 @@
 # tinyrox says don't edit this manually, but it can't stop you!
 
 export(add)
+export(adjacency)
 export(blast_radius)
 export(briefing)
+export(clusters)
 export(emit_obo)
 export(heartbeat)
 export(hub)

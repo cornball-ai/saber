@@ -27,8 +27,10 @@ writeLines(c(
   "Package: mypackage",
   "Version: 0.1.0",
   "Title: My Package",
+  "Depends: R (>= 4.0), methods",
   "Imports: RSQLite, yaml",
-  "Suggests: tinytest"
+  "Suggests: tinytest",
+  "LinkingTo: Rcpp"
 ), file.path(proj1, "DESCRIPTION"))
 
 # Project 2: has CLAUDE.md and DESCRIPTION
@@ -121,16 +123,32 @@ expect_true(any(inline_rels$subject_id == "mypackage" &
 # --- DESCRIPTION dependency relations ---
 auto_rels <- idx$relations[idx$relations$source == "auto", , drop = FALSE]
 
-# mypackage uses RSQLite and yaml
+# mypackage imports RSQLite and yaml
 mp_deps <- auto_rels[auto_rels$subject_id == "mypackage", ]
 expect_true("RSQLite" %in% mp_deps$object_id)
 expect_true("yaml" %in% mp_deps$object_id)
-expect_true(all(mp_deps$relation_type == "uses"))
+mp_imports <- mp_deps[mp_deps$relation_type == "imports", ]
+expect_true("RSQLite" %in% mp_imports$object_id)
+expect_true("yaml" %in% mp_imports$object_id)
 
-# otherapp uses mypackage and jsonlite
+# mypackage suggests tinytest
+mp_suggests <- mp_deps[mp_deps$relation_type == "suggests", ]
+expect_true("tinytest" %in% mp_suggests$object_id)
+
+# mypackage depends on methods (R filtered out)
+mp_depends <- mp_deps[mp_deps$relation_type == "depends", ]
+expect_true("methods" %in% mp_depends$object_id)
+expect_false("R" %in% mp_depends$object_id)
+
+# mypackage links_to Rcpp
+mp_linksto <- mp_deps[mp_deps$relation_type == "links_to", ]
+expect_true("Rcpp" %in% mp_linksto$object_id)
+
+# otherapp imports mypackage and jsonlite
 oa_deps <- auto_rels[auto_rels$subject_id == "otherapp", ]
 expect_true("mypackage" %in% oa_deps$object_id)
 expect_true("jsonlite" %in% oa_deps$object_id)
+expect_true(all(oa_deps$relation_type == "imports"))
 
 # --- No staging vault created ---
 expect_false(dir.exists(file.path(cache_dir, "basalt", "vault")))

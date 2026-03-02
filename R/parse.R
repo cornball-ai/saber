@@ -77,23 +77,30 @@ file_hash <- function(filepath) {
 
 #' Parse an R package DESCRIPTION file
 #'
-#' Extracts Package name, Imports, and Suggests fields.
+#' Extracts Package name and all four dependency fields.
 #'
 #' @param filepath Path to a DESCRIPTION file.
-#' @return A list with components: package, imports, suggests (character vectors).
+#' @return A list with components: package, depends, imports, suggests,
+#'   links_to (character vectors).
 #' @noRd
 parse_description <- function(filepath) {
     dcf <- tryCatch(read.dcf(filepath,
-                             fields = c("Package", "Imports", "Suggests")),
+                             fields = c("Package", "Depends", "Imports", "Suggests",
+                                        "LinkingTo")),
                     error = function(e) return(NULL))
     if (is.null(dcf) || nrow(dcf) == 0L) {
-        return(list(package = NA_character_, imports = character(0L),
-                    suggests = character(0L)))
+        return(list(package = NA_character_, depends = character(0L),
+                    imports = character(0L), suggests = character(0L),
+                    links_to = character(0L)))
     }
     pkg <- dcf[1L, "Package"]
+    depends <- parse_dcf_list(dcf[1L, "Depends"])
+    depends <- depends[depends != "R"]
     imports <- parse_dcf_list(dcf[1L, "Imports"])
     suggests <- parse_dcf_list(dcf[1L, "Suggests"])
-    list(package = pkg, imports = imports, suggests = suggests)
+    links_to <- parse_dcf_list(dcf[1L, "LinkingTo"])
+    list(package = pkg, depends = depends, imports = imports,
+         suggests = suggests, links_to = links_to)
 }
 
 #' Parse a comma-separated DCF field into a clean character vector

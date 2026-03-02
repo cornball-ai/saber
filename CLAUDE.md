@@ -84,6 +84,22 @@ Use the query results to build context, pick retrieval targets, expand search te
 | `hub(name, content)` | Create/update a feature hub markdown file |
 | `hubs()` | List all hubs with their wikilink references |
 
+### Graph analysis
+
+| Function | Purpose |
+|---|---|
+| `adjacency(vault_path, weights, symmetric)` | Build weighted adjacency matrix from relations |
+| `clusters(vault_path, k, weights, method)` | Hierarchical clustering of terms (hclust/cutree) |
+
+DESCRIPTION dependency fields map to relation types with default weights:
+
+| DESCRIPTION field | relation_type | Default weight |
+|---|---|---|
+| Depends | `depends` | 1.0 |
+| Imports | `imports` | 1.0 |
+| LinkingTo | `links_to` | 0.8 |
+| Suggests | `suggests` | 0.3 |
+
 ## Vault conventions
 
 ### Frontmatter
@@ -191,6 +207,7 @@ R/
   symbols.R    — symbols(), AST symbol index
   blast.R      — blast_radius(), impact analysis
   hubs.R       — hub(), hubs(), feature hub files
+  graph.R      — adjacency(), clusters(), dependency matrix
   db.R         — load_index(), save_index(), TSV I/O
   parse.R      — frontmatter/link parsing
 inst/
