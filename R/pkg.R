@@ -118,9 +118,7 @@ pkg_help <- function(topic, package) {
              call. = FALSE)
     }
 
-    result <- rd2md(db[[rd_name]])
-    message(result)
-    invisible(result)
+    rd2md(db[[rd_name]])
 }
 
 # --- Internal Rd-to-markdown conversion ---
