@@ -95,9 +95,13 @@ pkg_internals <- function(package, pattern = NULL) {
 #'
 #' @param topic Character. The help topic name.
 #' @param package Character. Package name.
-#' @return Character string of markdown help text (invisibly). Also printed.
+#' @param format Character. Output format: \code{"md"} (default) for plain
+#'   markdown, or \code{"hugo"} for Hugo-compatible markdown with YAML front
+#'   matter.
+#' @return Character string of markdown help text.
 #' @export
-pkg_help <- function(topic, package) {
+pkg_help <- function(topic, package, format = c("md", "hugo")) {
+    format <- match.arg(format)
     db <- tools::Rd_db(package)
 
     rd_name <- paste0(topic, ".Rd")
@@ -118,7 +122,12 @@ pkg_help <- function(topic, package) {
              call. = FALSE)
     }
 
-    rd2md(db[[rd_name]])
+    rd <- db[[rd_name]]
+    if (format == "hugo") {
+        rd2hugo(rd, topic, package)
+    } else {
+        rd2md(rd)
+    }
 }
 
 # --- Internal Rd-to-markdown conversion ---
@@ -222,6 +231,35 @@ rd2md <- function(rd) {
     }
 
     paste(lines, collapse = "\n")
+}
+
+#' Convert Rd object to Hugo-compatible markdown
+#' @noRd
+rd2hugo <- function(rd, topic, package) {
+    title <- ""
+    description <- ""
+    for (element in rd) {
+        tag <- attr(element, "Rd_tag")
+        if (identical(tag, "\\title")) {
+            title <- trimws(rd_to_text(element))
+        }
+        if (identical(tag, "\\description")) {
+            description <- trimws(rd_to_md(element))
+        }
+    }
+
+    body <- rd2md(rd)
+
+    front <- paste0(
+        "---\n",
+        "title: \"", topic, "\"\n",
+        "package: \"", package, "\"\n",
+        "description: >-\n",
+        "  ", gsub("\n", " ", description), "\n",
+        "---\n"
+    )
+
+    paste0(front, "\n", body)
 }
 
 #' Extract plain text from Rd element

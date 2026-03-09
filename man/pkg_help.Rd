@@ -3,15 +3,19 @@
 \alias{pkg_help}
 \title{Get help for a package topic as markdown}
 \usage{
-pkg_help(topic, package)
+pkg_help(topic, package, format = c("md", "hugo"))
 }
 \arguments{
 \item{topic}{Character. The help topic name.}
 
 \item{package}{Character. Package name.}
+
+\item{format}{Character. Output format: \code{"md"} (default) for plain
+markdown, or \code{"hugo"} for Hugo-compatible markdown with YAML front
+matter.}
 }
 \value{
-Character string of markdown help text (invisibly). Also printed.
+Character string of markdown help text.
 }
 \description{
 Extracts help documentation and converts it to clean markdown.
