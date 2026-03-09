@@ -1,19 +1,16 @@
-Package: basalt
+Package: saber
 Type: Package
-Title: Live Ontology from a Markdown Vault
+Title: AST Symbol Index and Code Analysis for R Projects
 Version: 0.1.0
 Authors@R: person("Troy", "Hernandez", role = c("aut", "cre"),
     email = "troy@cornball.ai",
     comment = c(ORCID = "0009-0005-4248-604X"))
-Description: Maintains a live ontology derived from a markdown vault with
-    'YAML' frontmatter and typed links. Parses markdown files into a TSV
-    index, supports graph traversal queries, suggests typed relations from
-    untyped links, and emits OBO format snapshots.
+Description: Parses R source files into AST symbol indices, traces function
+    callers across projects, and provides package introspection tools.
+    Designed for AI coding agents that need structured code understanding.
 License: Apache License (>= 2)
-URL: https://github.com/cornball-ai/basalt
-BugReports: https://github.com/cornball-ai/basalt/issues
-Imports:
-    yaml
+URL: https://github.com/cornball-ai/saber
+BugReports: https://github.com/cornball-ai/saber/issues
 Suggests:
     tinytest
 Encoding: UTF-8

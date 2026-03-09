@@ -4,18 +4,18 @@
 #' Find callers of a function across projects
 #'
 #' Given a function name and project, finds all internal callers within that
-#' project and all callers in downstream projects (projects that \code{uses}
-#' this one according to the ontology).
+#' project and all callers in downstream projects (projects whose DESCRIPTION
+#' lists this one in Depends, Imports, or LinkingTo).
 #'
 #' @param fn Character. Function name to search for.
 #' @param project Character. Project name (or path to project directory).
-#' @param vault_path Path to the basalt vault (for ontology lookups).
+#' @param scan_dir Directory to scan for downstream projects.
 #' @param cache_dir Directory for symbol cache files.
 #' @return A data.frame with columns: caller, project, file, line.
 #' @export
 blast_radius <- function(fn, project = NULL,
-                         vault_path = file.path(tools::R_user_dir("basalt", "cache"), "index"),
-                         cache_dir = file.path(tools::R_user_dir("basalt", "cache"), "symbols")) {
+                         scan_dir = path.expand("~"),
+                         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
     if (is.null(project)) {
         project <- basename(getwd())
     }
@@ -43,33 +43,64 @@ blast_radius <- function(fn, project = NULL,
         }
     }
 
-    # 2. Find downstream projects via ontology `uses` relations
-    idx <- tryCatch(load_index(vault_path), error = function(e) NULL)
-    if (!is.null(idx)) {
-        rels <- idx$relations[idx$relations$confirmed == 1L,, drop = FALSE]
-        downstream <- rels$subject_id[rels$object_id == project_name &
-            rels$relation_type == "uses"]
+    # 2. Find downstream projects via DESCRIPTION files
+    downstream <- find_downstream(project_name, scan_dir)
 
-        for (ds_name in downstream) {
-            ds_dir <- file.path(path.expand("~"), ds_name)
-            if (!dir.exists(ds_dir)) {
-                next
-            }
+    for (ds_name in downstream) {
+        ds_dir <- file.path(scan_dir, ds_name)
+        if (!dir.exists(file.path(ds_dir, "R"))) {
+            next
+        }
 
-            ds_syms <- symbols(ds_dir, cache_dir = cache_dir)
-            # Look for pkg::fn calls
-            qualified <- paste0(project_name, "::", fn)
-            ds_callers <- ds_syms$calls[ds_syms$calls$callee == qualified |
-                ds_syms$calls$callee == fn,, drop = FALSE]
-            if (nrow(ds_callers) > 0L) {
-                results <- rbind(results,
-                                 data.frame(caller = ds_callers$caller, project = ds_name,
-                        file = ds_callers$file, line = ds_callers$line,
-                        stringsAsFactors = FALSE))
-            }
+        ds_syms <- symbols(ds_dir, cache_dir = cache_dir)
+        # Look for pkg::fn calls and bare fn calls
+        qualified <- paste0(project_name, "::", fn)
+        ds_callers <- ds_syms$calls[ds_syms$calls$callee == qualified |
+            ds_syms$calls$callee == fn,, drop = FALSE]
+        if (nrow(ds_callers) > 0L) {
+            results <- rbind(results,
+                             data.frame(caller = ds_callers$caller, project = ds_name,
+                    file = ds_callers$file, line = ds_callers$line,
+                    stringsAsFactors = FALSE))
         }
     }
 
     results
 }
 
+#' Find projects that depend on a given package
+#'
+#' Scans DESCRIPTION files in project directories under \code{scan_dir}
+#' for Depends, Imports, or LinkingTo fields that reference \code{package}.
+#'
+#' @param package Character. Package name to search for.
+#' @param scan_dir Directory to scan for project directories.
+#' @return Character vector of project names that depend on \code{package}.
+#' @noRd
+find_downstream <- function(package, scan_dir) {
+    project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
+    downstream <- character(0L)
+
+    for (d in project_dirs) {
+        desc_file <- file.path(d, "DESCRIPTION")
+        if (!file.exists(desc_file)) {
+            next
+        }
+        dcf <- tryCatch(
+            read.dcf(desc_file, fields = c("Depends", "Imports", "LinkingTo")),
+            error = function(e) NULL
+        )
+        if (is.null(dcf) || nrow(dcf) == 0L) {
+            next
+        }
+        deps <- character(0L)
+        for (field in c("Depends", "Imports", "LinkingTo")) {
+            deps <- c(deps, parse_dcf_list(dcf[1L, field]))
+        }
+        if (package %in% deps) {
+            downstream <- c(downstream, basename(d))
+        }
+    }
+
+    downstream
+}

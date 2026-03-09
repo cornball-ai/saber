@@ -1,11 +1,11 @@
 # Tests for symbols.R
 
-library(basalt)
+library(saber)
 
-# --- symbols on basalt itself ---
+# --- symbols on saber itself ---
 
 cache <- tempfile("symcache")
-syms <- symbols(system.file(package = "basalt"), cache_dir = cache)
+syms <- symbols(system.file(package = "saber"), cache_dir = cache)
 
 # Should return a list with defs and calls
 expect_true(is.list(syms))

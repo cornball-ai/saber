@@ -5,7 +5,7 @@
 #'
 #' Parses all \code{R/*.R} files in a project directory using
 #' \code{getParseData()} to extract function definitions and function calls.
-#' Results are cached as RDS in \code{~/.cache/basalt/symbols/}.
+#' Results are cached as RDS in \code{~/.cache/R/saber/symbols/}.
 #'
 #' @param project_dir Path to the project directory.
 #' @param cache_dir Directory for symbol cache files.
@@ -16,7 +16,7 @@
 #'   }
 #' @export
 symbols <- function(project_dir,
-                    cache_dir = file.path(tools::R_user_dir("basalt", "cache"), "symbols")) {
+                    cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
     project_dir <- normalizePath(project_dir, mustWork = TRUE)
     project_name <- basename(project_dir)
 

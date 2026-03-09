@@ -4,7 +4,7 @@
 \title{AST symbol index}
 \usage{
 symbols(project_dir,
-        cache_dir = file.path(tools::R_user_dir("basalt", "cache"), "symbols"))
+        cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
 }
 \arguments{
 \item{project_dir}{Path to the project directory.}
@@ -24,5 +24,5 @@ Build a symbol index for a project
 
 Parses all \code{R/*.R} files in a project directory using
 \code{getParseData()} to extract function definitions and function calls.
-Results are cached as RDS in \code{~/.cache/basalt/symbols/}.
+Results are cached as RDS in \code{~/.cache/R/saber/symbols/}.
 }
