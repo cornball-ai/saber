@@ -2,65 +2,38 @@
 
 ## What this is
 
-A small R package that maintains a live ontology across projects. You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
+saber ("to know") is the AST and code analysis package in the llamaR agent toolchain. It parses R source into structured symbol indices, traces function callers across projects, and provides package introspection. Zero dependencies.
 
-Project files (CLAUDE.md, DESCRIPTION, etc.) are the source of truth — read in place, never copied. The TSV index at `~/.cache/R/basalt/index` is derived. Never edit the index directly — edit the source files, then run `startup()`.
+You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
 
-This package is new and should evolve rapidly depending on how we end up using it. Don't be afraid to propose big changes depending on what's working.
+## Sister packages
+
+- **pensar** (cornball-ai/pensar): concept graph / ontology (depends on yaml)
+- **informR** (cornball-ai/informR): project briefings, heartbeat, feature hubs (depends on pensar)
 
 ## Design philosophy
 
-- Base R. No tidyverse. No pipes.
-- One real dependency: yaml. Everything else is base R.
-- Index stored as TSV files (human-readable, diffable).
-- OBO emit is just writeLines(). No serialization library.
+- Base R only. No tidyverse. No pipes. Zero dependencies.
 - CRAN-viable.
-- Apache-2.0 license (consistent with cornyverse core packages).
+- Apache-2.0 license.
 
 ## Cache layout
 
-All derived data lives under `tools::R_user_dir("basalt", "cache")` (`~/.cache/R/basalt/`):
-
 ```
-~/.cache/R/basalt/
-  index/.ontolite/   — terms.tsv, relations.tsv, files.tsv
-  instructions.md    — generated Claude Code instructions (cp to ~/.cache/claude/CLAUDE.md)
-  symbols/           — per-project RDS caches from symbols()
-  annotations/       — persistent annotation files from add()
-  briefs/            — briefing/heartbeat output
-  hubs/              — feature hub markdown files
+~/.cache/R/saber/
+  symbols/   — per-project RDS caches from symbols()
 ```
 
-basalt never writes outside this directory. After `startup()`, it prints a `cp` command if `~/.cache/claude/CLAUDE.md` needs updating.
-
-## How you use this package
-
-Shell into R:
-
-```
-r -e 'basalt::query("neural_networks", "is_a", "ancestors")'
-```
-
-All functions default to the standard cache path — no need to pass `vault_path` in normal use.
-
-Use the query results to build context, pick retrieval targets, expand search terms to descendants, or verify relationships before asserting them in conversation.
+saber never writes outside this directory.
 
 ## Core functions
 
-### Ontology
+### Code analysis
 
 | Function | Purpose |
 |---|---|
-| `index_vault(vault_path)` | Parse markdown files, build/update TSV index |
-| `query(term, relation, direction)` | Traverse the typed graph (ancestors, descendants, siblings) |
-| `suggest(vault_path)` | Propose typed edges from untyped links. Returns candidates, NOT facts. |
-| `promote(term, vault_path)` | Write a stable `id:` into a file's frontmatter |
-| `emit_obo(vault_path, outfile)` | Snapshot the current ontology to OBO format |
-| `status(vault_path)` | Summary stats: term count, relation count, unconfirmed suggestions |
-| `add(terms, relations)` | Bulk-insert terms and relations programmatically |
-| `startup()` | Scan projects, build unified ontology, generate instructions file |
-| `briefing(project)` | Generate per-project context briefing |
-| `heartbeat()` | Weekly cross-project activity summary |
+| `symbols(project_dir)` | AST symbol index: function defs and calls via `getParseData()` |
+| `blast_radius(fn, project)` | Find all callers of a function across projects |
 
 ### Package introspection
 
@@ -70,170 +43,59 @@ Use the query results to build context, pick retrieval targets, expand search te
 | `pkg_internals(package)` | List internal (non-exported) functions |
 | `pkg_help(topic, package)` | Get help topic as markdown |
 
-### Code analysis
-
-| Function | Purpose |
-|---|---|
-| `symbols(project_dir)` | AST symbol index: function defs and calls |
-| `blast_radius(fn, project)` | Find all callers of a function across projects |
-
-### Feature hubs
-
-| Function | Purpose |
-|---|---|
-| `hub(name, content)` | Create/update a feature hub markdown file |
-| `hubs()` | List all hubs with their wikilink references |
-
-### Graph analysis
-
-| Function | Purpose |
-|---|---|
-| `adjacency(vault_path, weights, symmetric)` | Build weighted adjacency matrix from relations |
-| `clusters(vault_path, k, weights, method)` | Hierarchical clustering of terms (hclust/cutree) |
-
-DESCRIPTION dependency fields map to relation types with default weights:
-
-| DESCRIPTION field | relation_type | Default weight |
-|---|---|---|
-| Depends | `depends` | 1.0 |
-| Imports | `imports` | 1.0 |
-| LinkingTo | `links_to` | 0.8 |
-| Suggests | `suggests` | 0.3 |
-
-## Vault conventions
-
-### Frontmatter
-
-```yaml
----
-id: ONTO:0000042
-type: term
-aliases:
-  - NN
-  - ANN
----
-```
-
-- `id:` is the stable identifier. Optional until promoted. Format: `PREFIX:NNNNNNN` (7-digit zero-padded).
-- `type: term` marks a note as an ontology term. Also inferred if the note is a typed-link target.
-- `aliases:` become OBO synonyms.
-
-### Typed relations (inline fields)
-
-```markdown
-is_a:: [[dev_tooling]]
-part_of:: [[cornyverse]]
-uses:: [[yaml]]
-```
-
-Dataview-style inline fields. The relation name is the key, the wikilink target is the value. These are the canonical typed edges.
-
-### Untyped links
-
-Regular `[[wikilinks]]` are indexed but treated as weak signals. They feed `suggest()`, not the ontology directly.
-
-### What counts as a term
-
-A note is a term if ANY of:
-- It has `id:` in frontmatter
-- It has `type: term` in frontmatter
-- It appears as the target of a typed relation
-
-Everything else is just a note.
-
-## Index format
-
-Three TSV files in `~/.cache/R/basalt/index/.ontolite/`:
-- `terms.tsv` — id, name, filepath, aliases (pipe-separated), promoted (0/1), updated_at
-- `relations.tsv` — subject_id, relation_type, object_id, confirmed (0/1), source (inline|suggested|manual|auto)
-- `files.tsv` — filepath, hash, parsed_at (for incremental rebuild)
-
-## ID generation
-
-When `promote()` is called:
-1. Find the max existing numeric ID in the index
-2. Increment by 1
-3. Write `id: PREFIX:NNNNNNN` into the file's frontmatter
-4. Update the index
-
-The prefix is configurable, default `ONTO`. This is a deliberate action, not automatic.
-
-## The suggest/confirm loop
-
-`suggest()` examines untyped links and proposes typed relations based on:
-- Folder structure (co-location as weak `part_of` signal)
-- Heading context (link under "## Methods" -> maybe `uses`)
-- Link frequency patterns
-
-Suggestions are written to `relations.tsv` with `confirmed = 0` and `source = 'suggested'`. Troy reviews them. You do NOT treat unconfirmed suggestions as facts.
-
-When Troy confirms: he either adds the typed inline field to the source file and runs `startup()`, or tells you to do it.
-
-## Correction protocol
-
-When Troy says something like "that's not is_a, that's uses":
-1. Edit the source file: change the inline field
-2. Run `startup()` to pick up the change
-3. Do NOT manually patch the index files
-
-When Troy says "that note shouldn't be a term":
-1. Remove `type: term` and `id:` from frontmatter if present
-2. The note remains as a file but drops out of the ontology on next index
-
-## Output format for queries
-
-`query()` returns a data.frame. When you're calling from the command line, print it as TSV for easy parsing:
+## How you use this package
 
 ```r
-res <- basalt::query("neural_networks", "is_a", "ancestors")
-write.table(res, stdout(), sep = "\t", row.names = FALSE, quote = FALSE)
+# Symbol index for a project
+saber::symbols("~/myproject")
+
+# Who calls this function?
+saber::blast_radius("my_function", project = "~/myproject")
+
+# What does a package export?
+saber::pkg_exports("dplyr")
+
+# Read help as markdown
+saber::pkg_help("mutate", "dplyr")
 ```
 
 ## File structure
 
 ```
 R/
-  index.R      — index_vault(), file parsing, frontmatter extraction
-  query.R      — query(), graph traversal
-  suggest.R    — suggest(), heuristic relation proposals
-  promote.R    — promote(), ID generation and writeback
-  emit.R       — emit_obo(), OBO format output
-  status.R     — status()
-  add.R        — add(), bulk insert
-  briefing.R   — briefing(), project context
-  heartbeat.R  — heartbeat(), cross-project summary
-  startup.R    — startup(), unified bootstrapper
-  pkg.R        — pkg_exports(), pkg_internals(), pkg_help(), Rd-to-md
-  symbols.R    — symbols(), AST symbol index
-  blast.R      — blast_radius(), impact analysis
-  hubs.R       — hub(), hubs(), feature hub files
-  graph.R      — adjacency(), clusters(), dependency matrix
-  db.R         — load_index(), save_index(), TSV I/O
-  parse.R      — frontmatter/link parsing
+  symbols.R  — symbols(), AST symbol index via getParseData()
+  blast.R    — blast_radius(), cross-project caller tracing
+  pkg.R      — pkg_exports(), pkg_internals(), pkg_help()
+  utils.R    — file_hash(), parse_dcf_list()
 inst/
-  tinytest/    — tests
-man/           — tinyrox
+  tinytest/  — tests
+man/         — tinyrox
 DESCRIPTION
 NAMESPACE
 ```
 
+## How blast_radius works
+
+`blast_radius()` finds all callers of a function, both within a project and across downstream projects:
+
+1. Builds the symbol index for the target project
+2. Finds internal callers from the symbol index
+3. Scans `~/` for projects with DESCRIPTION files that declare a dependency (Depends/Imports/LinkingTo) on the target package
+4. Builds symbol indices for downstream projects and finds callers there
+
+No ontology needed. Direct DESCRIPTION file scanning via `read.dcf()`.
+
 ## Testing
 
-- tinytest
-- Every core function gets at least one happy-path and one edge-case test.
-- Index tests use a temp directory, not a real vault.
+- tinytest, 37 tests
+- Tests use temp directories, not real projects
 
 ## Things you should NOT do
 
-- Do not add dependencies beyond yaml without asking Troy.
-- Do not silently promote notes to terms.
-- Do not treat suggested relations as confirmed.
-- Do not build an MCP server or HTTP layer. This is R-callable functions, nothing more.
-- Do not use tidyverse functions or pipes.
+- Do not add dependencies without asking Troy
+- Do not use tidyverse functions or pipes
 
 ## Things you SHOULD do
 
-- When Troy asks you to query the ontology, actually call the functions. Don't guess from memory.
-- When you notice an untyped link that should probably be typed, mention it. Don't auto-fix it.
-- When emitting OBO, include the human-readable comment after IDs: `is_a: ONTO:0000007 ! Machine Learning Method`
 - Keep functions short. If a function is over 80 lines, split it.
+- Use `saber::pkg_exports()` and `saber::pkg_help()` to understand packages before modifying code.
