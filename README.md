@@ -1,103 +1,76 @@
-# basalt
+# saber
 
-A live project ontology and code intelligence layer for R, built on base R.
+AST symbol index and code analysis for R projects. Zero dependencies.
 
-basalt gives LLM coding agents (and humans) a structured understanding of how
-projects relate to each other, what packages export, and where code changes
-will ripple. It parses markdown vaults into a typed knowledge graph, indexes
-R source code via AST analysis, and generates context briefings — all without
-leaving R.
+saber ("to know") parses R source into structured symbol indices, traces function callers across projects, and cracks open installed packages for introspection. Built for AI coding agents that need to understand R code without guessing.
+
+Part of [cerebro](https://github.com/cornball-ai/cerebro), the AI agent toolchain for R.
 
 ## Install
 
 ```r
-remotes::install_github("cornball-ai/basalt")
+remotes::install_github("cornball-ai/saber")
 ```
 
 ## What it does
 
-**Ontology** — Markdown files with YAML frontmatter and
-[Dataview-style](https://blacksmithgu.github.io/obsidian-dataview/) typed
-links (`is_a::`, `uses::`, `part_of::`) become a queryable graph stored as
-human-readable TSV files. Projects are auto-registered as terms. R package dependencies from
-DESCRIPTION files generate `uses` relations automatically.
+**5 exported functions.** That's the whole API.
 
-**Package introspection** — `pkg_exports()`, `pkg_internals()`, and
-`pkg_help()` let an LLM inspect any installed R package's API and
-documentation as markdown, without external tools.
+| Function | What it does |
+|---|---|
+| `symbols()` | Parse R source files into function defs and calls via `getParseData()` |
+| `blast_radius()` | Find every caller of a function, across projects |
+| `pkg_exports()` | List exported functions with argument signatures |
+| `pkg_internals()` | List internal (non-exported) functions |
+| `pkg_help()` | Pull help documentation as markdown |
 
-**Code analysis** — `symbols()` parses `R/*.R` files via `getParseData()` to
-build a function definition and call-graph index. `blast_radius()` traces
-callers of a function across the current project and all downstream projects
-that depend on it.
+## Examples
 
-**Feature hubs** — Markdown files mapping concepts to code locations using
-`[[project::function]]` wikilinks, stored in `~/.cache/basalt/hubs/`.
-
-**Context briefings** — `briefing()` assembles ontology identity, sibling
-projects, Claude Code memory, and recent git activity into a single markdown
-file. `heartbeat()` gives a weekly cross-project summary.
-
-## Quick start
+Index all function definitions and calls in a project:
 
 ```r
-library(basalt)
-
-# Bootstrap: scan ~/projects, build unified ontology
-startup()
-
-# Query relationships
-query("whisper", "is_a", "ancestors", vault_path = "~/.cache/basalt/vault")
-query("torch", "uses", "descendants", vault_path = "~/.cache/basalt/vault")
-
-# Inspect a package
-pkg_exports("basalt")
-pkg_help("query", "basalt")
-
-# Code analysis
-str(symbols("~/basalt"))
-blast_radius("load_index", project = "basalt")
-
-# Context
-briefing("whisper")
-heartbeat()
+syms <- saber::symbols("~/myproject")
+syms$defs  # data.frame: name, file, line, exported
+syms$calls # data.frame: caller, callee, file, line
 ```
 
-## Inspiration
+Find who calls a function (and where the damage lands if you change it):
 
-basalt draws on a few traditions:
+```r
+saber::blast_radius("my_function", project = "~/myproject")
+#>   caller      project      file         line
+#>   do_thing    myproject    main.R         42
+#>   run_batch   downstream   pipeline.R     17
+```
 
-- **[Obsidian](https://obsidian.md/)** — The vault-of-markdown-files model
-  and `[[wikilink]]` conventions. Obsidian showed that plain text files with
-  lightweight linking are a viable knowledge base. basalt borrows the
-  frontmatter + typed links pattern (via Dataview-style inline fields) as
-  its source of truth.
+Inspect any installed package without opening a browser:
 
-- **[OBO (Open Biological Ontologies)](http://www.obofoundry.org/)** — The
-  formal ontology tooling that the bioinformatics community has maintained
-  for decades. basalt's `is_a` / `part_of` relation types, term promotion
-  with stable IDs, and OBO format export all come from this lineage.
+```r
+saber::pkg_exports("saber")
+#>   name           args
+#>   blast_radius   fn, project, scan_dir, cache_dir
+#>   pkg_exports    package, pattern
+#>   pkg_help       topic, package, format
+#>   pkg_internals  package, pattern
+#>   symbols        project_dir, cache_dir
 
-- **[Context+](https://github.com/ForLoopCodes/contextplus)** — An MCP
-  server that combines AST parsing, spectral clustering, and Obsidian-style
-  linking to give AI agents structural understanding of large codebases.
-  basalt's feature hubs and blast radius analysis are directly inspired by
-  Context+'s `get_feature_hub` and `get_blast_radius` tools.
+saber::pkg_help("symbols", "saber")
+```
 
-- **[btw](https://github.com/jumpsetgo/btw)** /
-  **[fyi](https://github.com/cornball-ai/fyi)** — Tools that make R package
-  APIs legible to LLMs. btw pioneered the idea of dumping package exports
-  and help pages as structured text for AI consumption. fyi removed the
-  need for an MCP server, added internal function introspection, and
-  converted Rd to markdown. basalt's `pkg_exports()`, `pkg_internals()`,
-  and `pkg_help()` are a direct fold-in of fyi.
+## How it works
 
-- **Base R** — R has shipped `getParseData()`, `tools::Rd_db()`,
-  `tools::parse_Rd()`, and `read.dcf()` for decades. basalt's code analysis,
-  package introspection, and DESCRIPTION parsing all use these built-in
-  facilities directly — no compiled dependencies, no tree-sitter, no
-  embedding models. The tinyverse philosophy: if base R already does it,
-  use base R.
+`symbols()` runs `getParseData()` on every `R/*.R` file in a project, extracts function definitions and call sites, and caches the results as RDS in `~/.cache/R/saber/symbols/`. Cache invalidates on file content changes (MD5).
+
+`blast_radius()` builds on top of `symbols()`. It finds internal callers, then scans `~/` for any project whose DESCRIPTION declares a dependency on the target package. Traces the call graph across all of them.
+
+## Sister packages
+
+| Package | Purpose |
+|---|---|
+| [pensar](https://github.com/cornball-ai/pensar) | Concept graph and ontology |
+| [informR](https://github.com/cornball-ai/informR) | Project briefings and feature hubs |
+| [mirar](https://github.com/cornball-ai/mirar) | Runtime inspection of live R sessions |
+| [llamaR](https://github.com/cornball-ai/llamaR) | Agent runtime and chat loop |
 
 ## License
 
