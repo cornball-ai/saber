@@ -1,10 +1,13 @@
 # tinyrox says don't edit this manually, but it can't stop you!
 
 export(blast_radius)
+export(briefing)
 export(default_exclude)
+export(find_downstream)
 export(pkg_exports)
 export(pkg_help)
 export(pkg_internals)
+export(projects)
 export(symbols)
 
 importFrom(utils,getParseData)
