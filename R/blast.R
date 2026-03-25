@@ -25,8 +25,7 @@
 #' blast_radius("helper", project = d, scan_dir = tempdir(),
 #'              cache_dir = tempdir())
 #' @export
-blast_radius <- function(fn, project = NULL,
-                         scan_dir = path.expand("~"),
+blast_radius <- function(fn, project = NULL, scan_dir = path.expand("~"),
                          cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
                          exclude = default_exclude()) {
     if (is.null(project)) {
@@ -73,10 +72,11 @@ blast_radius <- function(fn, project = NULL,
         if (nrow(ds_callers) > 0L) {
             results <- rbind(results,
                              data.frame(caller = ds_callers$caller, project = ds_name,
-                    file = ds_callers$file, line = ds_callers$line,
-                    stringsAsFactors = FALSE))
+                                        file = ds_callers$file, line = ds_callers$line,
+                                        stringsAsFactors = FALSE))
         }
     }
 
     results
 }
+

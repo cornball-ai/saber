@@ -258,12 +258,12 @@ rd2hugo <- function(rd, topic, package) {
     body <- rd2md(rd)
 
     front <- paste0(
-        "---\n",
-        "title: \"", topic, "\"\n",
-        "package: \"", package, "\"\n",
-        "description: >-\n",
-        "  ", gsub("\n", " ", description), "\n",
-        "---\n"
+                    "---\n",
+                    "title: \"", topic, "\"\n",
+                    "package: \"", package, "\"\n",
+                    "description: >-\n",
+                    "  ", gsub("\n", " ", description), "\n",
+                    "---\n"
     )
 
     paste0(front, "\n", body)
