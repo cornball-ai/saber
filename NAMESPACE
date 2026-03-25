@@ -1,7 +1,10 @@
 # tinyrox says don't edit this manually, but it can't stop you!
 
 export(blast_radius)
+export(default_exclude)
 export(pkg_exports)
 export(pkg_help)
 export(pkg_internals)
 export(symbols)
+
+importFrom(utils,getParseData)
