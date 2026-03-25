@@ -2,14 +2,9 @@
 
 ## What this is
 
-saber ("to know") is the AST and code analysis package in the llamaR agent toolchain. It parses R source into structured symbol indices, traces function callers across projects, and provides package introspection. Zero dependencies.
+saber ("to know") is a code analysis and project context package for R. It parses R source into structured symbol indices, traces function callers across projects, discovers dependency graphs, generates project briefings, and provides package introspection. Zero dependencies.
 
 You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
-
-## Sister packages
-
-- **pensar** (cornball-ai/pensar): concept graph / ontology (depends on yaml)
-- **informR** (cornball-ai/informR): project briefings, heartbeat, feature hubs (depends on pensar)
 
 ## Design philosophy
 
@@ -22,9 +17,10 @@ You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
 ```
 ~/.cache/R/saber/
   symbols/   — per-project RDS caches from symbols()
+  briefs/    — project briefing markdown files from briefing()
 ```
 
-saber never writes outside this directory.
+saber never writes outside this directory (except briefings, which also return their content).
 
 ## Core functions
 
@@ -35,6 +31,14 @@ saber never writes outside this directory.
 | `symbols(project_dir)` | AST symbol index: function defs and calls via `getParseData()` |
 | `blast_radius(fn, project)` | Find all callers of a function across projects |
 
+### Project discovery
+
+| Function | Purpose |
+|---|---|
+| `projects(scan_dir)` | Discover R package projects and their metadata |
+| `find_downstream(package)` | Find all projects that depend on a given package |
+| `briefing(project)` | Generate project context briefing (metadata, dependents, memory, git log) |
+
 ### Package introspection
 
 | Function | Purpose |
@@ -43,52 +47,22 @@ saber never writes outside this directory.
 | `pkg_internals(package)` | List internal (non-exported) functions |
 | `pkg_help(topic, package)` | Get help topic as markdown |
 
-## How you use this package
-
-```r
-# Symbol index for a project
-saber::symbols("~/myproject")
-
-# Who calls this function?
-saber::blast_radius("my_function", project = "~/myproject")
-
-# What does a package export?
-saber::pkg_exports("dplyr")
-
-# Read help as markdown
-saber::pkg_help("mutate", "dplyr")
-```
-
 ## File structure
 
 ```
 R/
-  symbols.R  — symbols(), AST symbol index via getParseData()
-  blast.R    — blast_radius(), cross-project caller tracing
-  pkg.R      — pkg_exports(), pkg_internals(), pkg_help()
-  utils.R    — file_hash(), parse_dcf_list()
+  symbols.R   — symbols(), AST symbol index via getParseData()
+  blast.R     — blast_radius(), cross-project caller tracing
+  projects.R  — projects(), find_downstream(), project discovery
+  briefing.R  — briefing(), project context generation
+  pkg.R       — pkg_exports(), pkg_internals(), pkg_help()
+  utils.R     — file_hash(), default_exclude()
 inst/
-  tinytest/  — tests
-man/         — tinyrox
+  tinytest/   — tests
+man/          — tinyrox
 DESCRIPTION
 NAMESPACE
 ```
-
-## How blast_radius works
-
-`blast_radius()` finds all callers of a function, both within a project and across downstream projects:
-
-1. Builds the symbol index for the target project
-2. Finds internal callers from the symbol index
-3. Scans `~/` for projects with DESCRIPTION files that declare a dependency (Depends/Imports/LinkingTo) on the target package
-4. Builds symbol indices for downstream projects and finds callers there
-
-No ontology needed. Direct DESCRIPTION file scanning via `read.dcf()`.
-
-## Testing
-
-- tinytest, 37 tests
-- Tests use temp directories, not real projects
 
 ## Things you should NOT do
 

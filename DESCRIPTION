@@ -1,13 +1,14 @@
 Package: saber
 Type: Package
-Title: AST Symbol Index and Code Analysis for R Projects
-Version: 0.1.0
+Title: Code Analysis and Project Context for R
+Version: 0.2.0
 Authors@R: person("Troy", "Hernandez", role = c("aut", "cre"),
     email = "troy@cornball.ai",
     comment = c(ORCID = "0009-0005-4248-604X"))
 Description: Parses R source files into AST symbol indices, traces function
-    callers across projects, and provides package introspection tools.
-    Designed for AI coding agents that need structured code understanding.
+    callers across projects, discovers project dependency graphs, generates
+    project briefings, and provides package introspection tools. Designed
+    for AI coding agents that need structured code understanding.
 License: Apache License (>= 2)
 URL: https://github.com/cornball-ai/saber
 BugReports: https://github.com/cornball-ai/saber/issues
