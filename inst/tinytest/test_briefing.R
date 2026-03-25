@@ -25,11 +25,19 @@ system2("git", c("-C", pkg_dir, "add", "-A"), stdout = FALSE, stderr = FALSE)
 system2("git", c("-C", pkg_dir, "commit", "-q", "-m", "init"),
         stdout = FALSE, stderr = FALSE)
 
-# --- briefing() returns character ---
-result <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir,
-                   memory_base = tempdir())
+# --- briefing() returns a visible printable character object ---
+visible_result <- withVisible(
+    briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir,
+             memory_base = tempdir())
+)
+result <- visible_result$value
+expect_true(visible_result$visible)
 expect_true(is.character(result))
+expect_true(inherits(result, "saber_briefing"))
 expect_true(grepl("Briefing: demopkg", result))
+
+printed <- paste(capture.output(print(result)), collapse = "\n")
+expect_true(grepl("^# Briefing: demopkg", printed))
 
 # --- briefing includes DESCRIPTION metadata ---
 expect_true(grepl("Demo Package", result))
@@ -47,6 +55,7 @@ expect_true(file.exists(outfile))
 result_missing <- briefing("nonexistent", scan_dir = scan_dir,
                            briefs_dir = briefs_dir, memory_base = tempdir())
 expect_true(is.character(result_missing))
+expect_true(inherits(result_missing, "saber_briefing"))
 expect_true(grepl("Briefing: nonexistent", result_missing))
 
 # --- memory section ---

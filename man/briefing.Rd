@@ -21,8 +21,9 @@ directory basename.}
 \item{max_memory_lines}{Maximum lines to include from the memory file.}
 }
 \value{
-The briefing text (character string), returned invisibly. Also
-  written to \code{briefs_dir/{project}.md}.
+A character string of class \code{saber_briefing}. Printing the
+  object emits the markdown briefing. Also written to
+  \code{briefs_dir/{project}.md}.
 }
 \description{
 Generate project context for AI coding agents.
@@ -30,7 +31,7 @@ Generate a project briefing
 
 Produces a concise markdown briefing combining DESCRIPTION metadata,
 downstream dependents, 'Claude Code' memory, and recent git commits.
-Written to \code{~/.cache/R/saber/briefs/} so both the agent and user
+Written to the user cache directory so both the agent and user
 see the same context.
 }
 \examples{

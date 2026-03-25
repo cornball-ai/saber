@@ -60,7 +60,7 @@ saber::find_downstream("jsonlite")
 Generate a project briefing for an AI agent:
 
 ```r
-cat(saber::briefing("saber"))
+saber::briefing("saber")
 #> # Briefing: saber
 #> _Generated 2026-03-25 00:30_
 #>
@@ -83,13 +83,13 @@ saber::pkg_help("symbols", "saber")
 
 ## How it works
 
-`symbols()` runs `getParseData()` on every `R/*.R` file in a project, extracts function definitions and call sites, and caches the results as RDS in `~/.cache/R/saber/symbols/`. Cache invalidates on file content changes (MD5).
+`symbols()` runs `getParseData()` on every `R/*.R` file in a project, extracts function definitions and call sites, and caches the results as RDS in the user cache directory. Cache invalidates on file content changes (MD5).
 
 `blast_radius()` builds on top of `symbols()`. It finds internal callers, then scans `~/` for any project whose DESCRIPTION declares a dependency on the target package. Traces the call graph across all of them.
 
 `projects()` scans for directories containing DESCRIPTION files and reads their metadata. `find_downstream()` does the same scan but filters to projects that depend on a specific package.
 
-`briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. Writes to `~/.cache/R/saber/briefs/` so both the agent and user see the same context.
+`briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. It returns a printable `saber_briefing` character object and writes the same markdown to the user cache directory so both the agent and user see the same context.
 
 ## Claude Code hook
 
