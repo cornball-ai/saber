@@ -11,11 +11,24 @@
 #' @param project Character. Project name (or path to project directory).
 #' @param scan_dir Directory to scan for downstream projects.
 #' @param cache_dir Directory for symbol cache files.
+#' @param exclude Character vector of directory basenames to skip when
+#'   scanning for downstream projects.
 #' @return A data.frame with columns: caller, project, file, line.
+#' @examples
+#' # Create a minimal project
+#' d <- file.path(tempdir(), "blastpkg")
+#' dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
+#' writeLines("helper <- function(x) x + 1", file.path(d, "R", "helper.R"))
+#' writeLines("main <- function(x) helper(x * 2)", file.path(d, "R", "main.R"))
+#'
+#' # Find all callers of helper()
+#' blast_radius("helper", project = d, scan_dir = tempdir(),
+#'              cache_dir = tempdir())
 #' @export
 blast_radius <- function(fn, project = NULL,
                          scan_dir = path.expand("~"),
-                         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
+                         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
+                         exclude = default_exclude()) {
     if (is.null(project)) {
         project <- basename(getwd())
     }
@@ -44,7 +57,7 @@ blast_radius <- function(fn, project = NULL,
     }
 
     # 2. Find downstream projects via DESCRIPTION files
-    downstream <- find_downstream(project_name, scan_dir)
+    downstream <- find_downstream(project_name, scan_dir, exclude)
 
     for (ds_name in downstream) {
         ds_dir <- file.path(scan_dir, ds_name)
@@ -75,10 +88,12 @@ blast_radius <- function(fn, project = NULL,
 #'
 #' @param package Character. Package name to search for.
 #' @param scan_dir Directory to scan for project directories.
+#' @param exclude Character vector of directory basenames to skip.
 #' @return Character vector of project names that depend on \code{package}.
 #' @noRd
-find_downstream <- function(package, scan_dir) {
+find_downstream <- function(package, scan_dir, exclude = default_exclude()) {
     project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
+    project_dirs <- project_dirs[!basename(project_dirs) %in% exclude]
     downstream <- character(0L)
 
     for (d in project_dirs) {

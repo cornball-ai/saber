@@ -19,3 +19,7 @@ List exported functions of a package
 
 Returns a data.frame of exported functions with their argument signatures.
 }
+\examples{
+pkg_exports("tools")
+pkg_exports("tools", pattern = "^Rd")
+}

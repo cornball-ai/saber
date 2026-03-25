@@ -16,3 +16,6 @@ A data.frame with columns: name, args.
 \description{
 Returns functions defined in a package namespace but not exported.
 }
+\examples{
+pkg_internals("tools", pattern = "^check")
+}
