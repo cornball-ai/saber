@@ -74,7 +74,7 @@ cat(saber::briefing("saber"))
 #> - ...
 ```
 
-Inspect any installed package without opening a browser:
+Inspect any installed package:
 
 ```r
 saber::pkg_exports("saber")
