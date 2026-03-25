@@ -20,9 +20,15 @@ A list with components:
 }
 \description{
 Parse R source files to extract function definitions and calls.
-Build a symbol index for a project
+}
+\examples{
+# Create a minimal project with R source files
+d <- file.path(tempdir(), "demopkg")
+dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
+writeLines("add <- function(x, y) x + y", file.path(d, "R", "add.R"))
+writeLines("double <- function(x) add(x, x)", file.path(d, "R", "double.R"))
 
-Parses all \code{R/*.R} files in a project directory using
-\code{getParseData()} to extract function definitions and function calls.
-Results are cached as RDS in \code{~/.cache/R/saber/symbols/}.
+idx <- symbols(d, cache_dir = tempdir())
+idx$defs   # function definitions
+idx$calls  # call relationships (double calls add)
 }

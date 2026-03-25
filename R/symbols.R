@@ -15,6 +15,16 @@
 #'     \item{defs}{data.frame(name, file, line, exported)}
 #'     \item{calls}{data.frame(caller, callee, file, line)}
 #'   }
+#' @examples
+#' # Create a minimal project with R source files
+#' d <- file.path(tempdir(), "demopkg")
+#' dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
+#' writeLines("add <- function(x, y) x + y", file.path(d, "R", "add.R"))
+#' writeLines("double <- function(x) add(x, x)", file.path(d, "R", "double.R"))
+#'
+#' idx <- symbols(d, cache_dir = tempdir())
+#' idx$defs   # function definitions
+#' idx$calls  # call relationships (double calls add)
 #' @export
 symbols <- function(project_dir,
                     cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {

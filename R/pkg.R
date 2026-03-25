@@ -8,6 +8,9 @@
 #' @param package Character. Package name.
 #' @param pattern Optional regex to filter function names.
 #' @return A data.frame with columns: name, args.
+#' @examples
+#' pkg_exports("tools")
+#' pkg_exports("tools", pattern = "^Rd")
 #' @export
 pkg_exports <- function(package, pattern = NULL) {
     ns <- tryCatch(
@@ -51,6 +54,8 @@ pkg_exports <- function(package, pattern = NULL) {
 #' @param package Character. Package name.
 #' @param pattern Optional regex to filter function names.
 #' @return A data.frame with columns: name, args.
+#' @examples
+#' pkg_internals("tools", pattern = "^check")
 #' @export
 pkg_internals <- function(package, pattern = NULL) {
     ns <- tryCatch(
@@ -99,6 +104,8 @@ pkg_internals <- function(package, pattern = NULL) {
 #'   markdown, or \code{"hugo"} for Hugo-compatible markdown with YAML front
 #'   matter.
 #' @return Character string of markdown help text.
+#' @examples
+#' cat(pkg_help("md5sum", "tools"))
 #' @export
 pkg_help <- function(topic, package, format = c("md", "hugo")) {
     format <- match.arg(format)

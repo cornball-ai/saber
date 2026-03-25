@@ -20,3 +20,6 @@ Character string of markdown help text.
 \description{
 Extracts help documentation and converts it to clean markdown.
 }
+\examples{
+cat(pkg_help("md5sum", "tools"))
+}
