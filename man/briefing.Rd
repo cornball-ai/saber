@@ -29,7 +29,7 @@ Generate project context for AI coding agents.
 Generate a project briefing
 
 Produces a concise markdown briefing combining DESCRIPTION metadata,
-downstream dependents, Claude Code memory, and recent git commits.
+downstream dependents, 'Claude Code' memory, and recent git commits.
 Written to \code{~/.cache/R/saber/briefs/} so both the agent and user
 see the same context.
 }
