@@ -1,8 +1,8 @@
 # saber
 
-Code analysis and project context for R. Zero dependencies.
+Code analysis and project context for R.
 
-saber ("to know") parses R source into structured symbol indices, traces function callers across projects, discovers dependency graphs, generates project briefings, and cracks open installed packages for introspection. Built for AI coding agents that need to understand R code without guessing.
+saber ("to know" in Spanish, pronounced [sah-BEHR](https://www.youtube.com/watch?v=m3WBocsw9lw)) parses R source into structured symbol indices, traces function callers across projects, discovers dependency graphs, generates project briefings, and cracks open installed packages for introspection. Built for AI coding agents that need to understand R code without guessing.
 
 ## Install
 
@@ -12,7 +12,7 @@ remotes::install_github("cornball-ai/saber")
 
 ## What it does
 
-**9 exported functions.** That's the whole API.
+**9 exported functions.**
 
 | Function | What it does |
 |---|---|
@@ -52,8 +52,9 @@ saber::projects()
 #>   package   title                  version  path            depends  imports
 #>   saber     Code Analysis for R    0.2.0    /home/troy/saber        ...
 
-saber::find_downstream("saber")
-#>   [1] "cerebelo" "informR"
+saber::find_downstream("jsonlite")
+#>   [1] "chatterbox" "cornfab" "diffuseR" "llamaR" "llm.api"
+#>   [6] "safetensors" "stt.api" "torch" "tts.api" "tuber" "whisper"
 ```
 
 Generate a project briefing for an AI agent:
@@ -89,6 +90,50 @@ saber::pkg_help("symbols", "saber")
 `projects()` scans for directories containing DESCRIPTION files and reads their metadata. `find_downstream()` does the same scan but filters to projects that depend on a specific package.
 
 `briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. Writes to `~/.cache/R/saber/briefs/` so both the agent and user see the same context.
+
+## Claude Code hook
+
+You can inject a project briefing into Claude Code's context at the start of every session. Save this as `session-start.sh` somewhere on your PATH (or in your project):
+
+```bash
+#!/bin/bash
+PROJECT=$(basename "$PWD")
+BRIEFING=$(r -e "
+  tryCatch(cat(saber::briefing(\"$PROJECT\")),
+           error = function(e) cat(''))
+" 2>/dev/null)
+
+[ -z "$BRIEFING" ] && exit 0
+
+jq -n --arg ctx "$BRIEFING" '{
+  "hookSpecificOutput": {
+    "hookEventName": "SessionStart",
+    "additionalContext": $ctx
+  }
+}'
+```
+
+Then add it to your Claude Code settings (`~/.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/path/to/session-start.sh",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Every new session starts with the project's metadata, downstream dependents, Claude Code memory, and recent git commits already in context.
 
 ## License
 
