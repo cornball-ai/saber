@@ -24,8 +24,7 @@
 #' briefing("briefpkg", scan_dir = tempdir(),
 #'          briefs_dir = file.path(tempdir(), "briefs"))
 #' @export
-briefing <- function(project = NULL,
-                     scan_dir = path.expand("~"),
+briefing <- function(project = NULL, scan_dir = path.expand("~"),
                      memory_base = file.path(path.expand("~"), ".claude", "projects"),
                      briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
                      max_memory_lines = 30L) {
@@ -41,16 +40,24 @@ briefing <- function(project = NULL,
     lines <- c(lines, "")
 
     desc <- briefing_desc(project, scan_dir)
-    if (length(desc) > 0L) lines <- c(lines, desc, "")
+    if (length(desc) > 0L) {
+        lines <- c(lines, desc, "")
+    }
 
     ds <- briefing_downstream(project, scan_dir)
-    if (length(ds) > 0L) lines <- c(lines, ds, "")
+    if (length(ds) > 0L) {
+        lines <- c(lines, ds, "")
+    }
 
     mem <- briefing_memory(project, memory_base, max_memory_lines)
-    if (length(mem) > 0L) lines <- c(lines, mem, "")
+    if (length(mem) > 0L) {
+        lines <- c(lines, mem, "")
+    }
 
     git <- briefing_git(project, scan_dir)
-    if (length(git) > 0L) lines <- c(lines, git, "")
+    if (length(git) > 0L) {
+        lines <- c(lines, git, "")
+    }
 
     text <- paste(lines, collapse = "\n")
 
@@ -65,31 +72,43 @@ briefing <- function(project = NULL,
 briefing_desc <- function(project, scan_dir) {
     repo_dir <- file.path(scan_dir, project)
     desc_file <- file.path(repo_dir, "DESCRIPTION")
-    if (!file.exists(desc_file)) return(character(0L))
+    if (!file.exists(desc_file)) {
+        return(character(0L))
+    }
 
     dcf <- tryCatch(
-        read.dcf(desc_file,
-                 fields = c("Package", "Title", "Version", "Imports")),
-        error = function(e) NULL
+                    read.dcf(desc_file,
+                             fields = c("Package", "Title", "Version", "Imports")),
+                    error = function(e) NULL
     )
-    if (is.null(dcf) || nrow(dcf) == 0L) return(character(0L))
+    if (is.null(dcf) || nrow(dcf) == 0L) {
+        return(character(0L))
+    }
 
     lines <- "## Package"
     pkg <- dcf[1L, "Package"]
-    if (!is.na(pkg)) lines <- c(lines, sprintf("- **Name**: %s", pkg))
+    if (!is.na(pkg)) {
+        lines <- c(lines, sprintf("- **Name**: %s", pkg))
+    }
 
     title <- dcf[1L, "Title"]
-    if (!is.na(title)) lines <- c(lines, sprintf("- **Title**: %s", title))
+    if (!is.na(title)) {
+        lines <- c(lines, sprintf("- **Title**: %s", title))
+    }
 
     ver <- dcf[1L, "Version"]
-    if (!is.na(ver)) lines <- c(lines, sprintf("- **Version**: %s", ver))
+    if (!is.na(ver)) {
+        lines <- c(lines, sprintf("- **Version**: %s", ver))
+    }
 
     imports <- dcf[1L, "Imports"]
     if (!is.na(imports) && nchar(trimws(imports)) > 0L) {
         lines <- c(lines, sprintf("- **Imports**: %s", trimws(imports)))
     }
 
-    if (length(lines) == 1L) return(character(0L))
+    if (length(lines) == 1L) {
+        return(character(0L))
+    }
     lines
 }
 
@@ -97,7 +116,9 @@ briefing_desc <- function(project, scan_dir) {
 #' @noRd
 briefing_downstream <- function(project, scan_dir) {
     ds <- find_downstream(project, scan_dir)
-    if (length(ds) == 0L) return(character(0L))
+    if (length(ds) == 0L) {
+        return(character(0L))
+    }
 
     lines <- "## Downstream dependents"
     for (d in ds) {
@@ -127,7 +148,9 @@ briefing_memory <- function(project, memory_base, max_lines) {
         }
     }
 
-    if (is.null(mem_file)) return(character(0L))
+    if (is.null(mem_file)) {
+        return(character(0L))
+    }
 
     mem_lines <- readLines(mem_file, warn = FALSE)
     lines <- "## Memory"
@@ -150,11 +173,13 @@ briefing_git <- function(project, scan_dir) {
     }
 
     log <- tryCatch(
-        system2("git", c("-C", repo_dir, "log", "--oneline", "-5"),
-                stdout = TRUE, stderr = FALSE),
-        error = function(e) character(0L)
+                    system2("git", c("-C", repo_dir, "log", "--oneline", "-5"),
+                            stdout = TRUE, stderr = FALSE),
+                    error = function(e) character(0L)
     )
-    if (length(log) == 0L) return(character(0L))
+    if (length(log) == 0L) {
+        return(character(0L))
+    }
 
     lines <- "## Recent commits"
     for (l in log) {
@@ -162,3 +187,4 @@ briefing_git <- function(project, scan_dir) {
     }
     lines
 }
+

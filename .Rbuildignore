@@ -3,3 +3,5 @@
 ^\.github$
 ^LICENSE$
 ^LICENSE\.md$
+^.*\.Rproj$
+^\.Rproj\.user$

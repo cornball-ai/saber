@@ -19,26 +19,31 @@
 #'            file.path(pkg, "DESCRIPTION"))
 #' projects(scan_dir = d)
 #' @export
-projects <- function(scan_dir = path.expand("~"),
-                     exclude = default_exclude()) {
+projects <- function(scan_dir = path.expand("~"), exclude = default_exclude()) {
     project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
     project_dirs <- project_dirs[!basename(project_dirs) %in% exclude]
 
     rows <- list()
     for (d in project_dirs) {
         desc_file <- file.path(d, "DESCRIPTION")
-        if (!file.exists(desc_file)) next
+        if (!file.exists(desc_file)) {
+            next
+        }
 
         dcf <- tryCatch(
-            read.dcf(desc_file,
-                     fields = c("Package", "Title", "Version",
-                                "Depends", "Imports", "LinkingTo")),
-            error = function(e) NULL
+                        read.dcf(desc_file,
+                                 fields = c("Package", "Title", "Version",
+                    "Depends", "Imports", "LinkingTo")),
+                        error = function(e) NULL
         )
-        if (is.null(dcf) || nrow(dcf) == 0L) next
+        if (is.null(dcf) || nrow(dcf) == 0L) {
+            next
+        }
 
         pkg_name <- dcf[1L, "Package"]
-        if (is.na(pkg_name) || nchar(trimws(pkg_name)) == 0L) next
+        if (is.na(pkg_name) || nchar(trimws(pkg_name)) == 0L) {
+            next
+        }
 
         rows[[length(rows) + 1L]] <- data.frame(
             package = pkg_name,
@@ -86,13 +91,17 @@ find_downstream <- function(package, scan_dir = path.expand("~"),
 
     for (d in project_dirs) {
         desc_file <- file.path(d, "DESCRIPTION")
-        if (!file.exists(desc_file)) next
+        if (!file.exists(desc_file)) {
+            next
+        }
 
         dcf <- tryCatch(
-            read.dcf(desc_file, fields = c("Depends", "Imports", "LinkingTo")),
-            error = function(e) NULL
+                        read.dcf(desc_file, fields = c("Depends", "Imports", "LinkingTo")),
+                        error = function(e) NULL
         )
-        if (is.null(dcf) || nrow(dcf) == 0L) next
+        if (is.null(dcf) || nrow(dcf) == 0L) {
+            next
+        }
 
         deps <- character(0L)
         for (field in c("Depends", "Imports", "LinkingTo")) {
@@ -109,7 +118,11 @@ find_downstream <- function(package, scan_dir = path.expand("~"),
 #' Replace NA with empty string
 #' @noRd
 na_to_empty <- function(x) {
-    if (is.na(x)) "" else trimws(x)
+    if (is.na(x)) {
+        ""
+    } else {
+        trimws(x)
+    }
 }
 
 #' Parse a comma-separated DCF field into a clean character vector
@@ -124,3 +137,4 @@ parse_dcf_list <- function(x) {
     parts <- parts[nchar(parts) > 0L]
     parts
 }
+
