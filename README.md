@@ -93,24 +93,10 @@ saber::pkg_help("symbols", "saber")
 
 ## Claude Code hook
 
-You can inject a project briefing into Claude Code's context at the start of every session. Save this as `session-start.sh` somewhere on your PATH (or in your project):
+saber ships a SessionStart hook that injects a project briefing into Claude Code's context at the start of every session. Find the hook script's path:
 
-```bash
-#!/bin/bash
-PROJECT=$(basename "$PWD")
-BRIEFING=$(r -e "
-  tryCatch(cat(saber::briefing(\"$PROJECT\")),
-           error = function(e) cat(''))
-" 2>/dev/null)
-
-[ -z "$BRIEFING" ] && exit 0
-
-jq -n --arg ctx "$BRIEFING" '{
-  "hookSpecificOutput": {
-    "hookEventName": "SessionStart",
-    "additionalContext": $ctx
-  }
-}'
+```r
+system.file("scripts", "session-start.R", package = "saber")
 ```
 
 Then add it to your Claude Code settings (`~/.claude/settings.json`):
@@ -123,7 +109,7 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
         "hooks": [
           {
             "type": "command",
-            "command": "/path/to/session-start.sh",
+            "command": "Rscript /path/to/session-start.R",
             "timeout": 15
           }
         ]
