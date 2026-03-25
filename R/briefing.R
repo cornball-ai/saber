@@ -4,7 +4,7 @@
 #' Generate a project briefing
 #'
 #' Produces a concise markdown briefing combining DESCRIPTION metadata,
-#' downstream dependents, Claude Code memory, and recent git commits.
+#' downstream dependents, 'Claude Code' memory, and recent git commits.
 #' Written to \code{~/.cache/R/saber/briefs/} so both the agent and user
 #' see the same context.
 #'
@@ -127,7 +127,7 @@ briefing_downstream <- function(project, scan_dir) {
     lines
 }
 
-#' Claude Code memory section
+#' 'Claude Code' memory section
 #' @noRd
 briefing_memory <- function(project, memory_base, max_lines) {
     if (is.null(memory_base) || !dir.exists(memory_base)) {
