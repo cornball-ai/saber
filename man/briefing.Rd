@@ -21,9 +21,8 @@ directory basename.}
 \item{max_memory_lines}{Maximum lines to include from the memory file.}
 }
 \value{
-A character string of class \code{saber_briefing}. Printing the
-  object emits the markdown briefing. Also written to
-  \code{briefs_dir/{project}.md}.
+The briefing text (character string), returned invisibly. Printed
+  to stdout and written to \code{briefs_dir/{project}.md}.
 }
 \description{
 Generate project context for AI coding agents.

@@ -10,6 +10,4 @@ export(pkg_internals)
 export(projects)
 export(symbols)
 
-S3method(print,saber_briefing)
-
 importFrom(utils,getParseData)

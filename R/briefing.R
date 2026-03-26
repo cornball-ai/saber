@@ -14,9 +14,8 @@
 #' @param memory_base Base directory for Claude Code project memory files.
 #' @param briefs_dir Directory to write briefing markdown files.
 #' @param max_memory_lines Maximum lines to include from the memory file.
-#' @return A character string of class \code{saber_briefing}. Printing the
-#'   object emits the markdown briefing. Also written to
-#'   \code{briefs_dir/{project}.md}.
+#' @return The briefing text (character string), returned invisibly. Printed
+#'   to stdout and written to \code{briefs_dir/{project}.md}.
 #' @examples
 #' d <- file.path(tempdir(), "briefpkg")
 #' dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
@@ -60,22 +59,13 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
         lines <- c(lines, git, "")
     }
 
+    text <- paste(lines, collapse = "\n")
+
     outfile <- file.path(briefs_dir, paste0(project, ".md"))
     writeLines(lines, outfile)
 
-    structure(
-        paste(lines, collapse = "\n"),
-        class = c("saber_briefing", "character"),
-        file = outfile,
-        project = project
-    )
-}
-
-#' @export
-#' @noRd
-print.saber_briefing <- function(x, ...) {
-    cat(unclass(x), "\n", sep = "")
-    invisible(x)
+    cat(text, "\n", sep = "")
+    invisible(text)
 }
 
 #' DESCRIPTION metadata section

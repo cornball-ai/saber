@@ -91,9 +91,31 @@ saber::pkg_help("symbols", "saber")
 
 `briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. It returns a printable `saber_briefing` character object and writes the same markdown to the user cache directory so both the agent and user see the same context.
 
-## Claude Code hook
+## Claude Code integration
 
-saber ships a SessionStart hook that injects a project briefing into Claude Code's context at the start of every session. Find the hook script's path:
+Add the following to your `~/.claude/CLAUDE.md` to teach Claude Code how to use saber:
+
+```markdown
+### saber Toolchain Rules
+
+Before working on R code, use the right tool for the job:
+
+| Situation | Command |
+|-----------|---------|
+| Understand a package's API | `r -e 'saber::pkg_exports("pkg")'` |
+| Read function docs | `r -e 'saber::pkg_help("fn", "pkg")'` |
+| Before renaming/changing a function | `r -e 'saber::blast_radius("fn", project = ".")'` |
+| Understand a project's call graph | `r -e 'str(saber::symbols("."))'` |
+| Discover R packages and deps | `r -e 'print(saber::projects())'` |
+| What depends on a package | `r -e 'saber::find_downstream("pkg")'` |
+| Project briefing | `r -e 'saber::briefing("project")'` |
+
+**blast_radius is mandatory before renaming, moving, or changing the signature of any exported function.** It finds every caller across this project and all downstream projects. Skip it and you break things silently.
+```
+
+### SessionStart hook
+
+saber ships a hook script that injects a project briefing into Claude Code's context at the start of every session. Find it with:
 
 ```r
 system.file("scripts", "session-start.R", package = "saber")
