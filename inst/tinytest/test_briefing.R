@@ -27,8 +27,7 @@ system2("git", c("-C", pkg_dir, "commit", "-q", "-m", "init"),
 
 # --- briefing() returns invisible character, prints to stdout ---
 printed <- capture.output(
-    result <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir,
-                       memory_base = tempdir())
+    result <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir)
 )
 expect_true(is.character(result))
 expect_true(grepl("Briefing: demopkg", result))
@@ -48,20 +47,10 @@ expect_true(file.exists(outfile))
 
 # --- briefing handles missing project gracefully ---
 result_missing <- briefing("nonexistent", scan_dir = scan_dir,
-                           briefs_dir = briefs_dir, memory_base = tempdir())
+                           briefs_dir = briefs_dir)
 expect_true(is.character(result_missing))
 expect_true(grepl("Briefing: nonexistent", result_missing))
-
-# --- memory section ---
-mem_dir <- file.path(tempdir(), "test_memory", "-home-user-demopkg", "memory")
-dir.create(mem_dir, recursive = TRUE, showWarnings = FALSE)
-writeLines(c("# Memory", "- something important"), file.path(mem_dir, "MEMORY.md"))
-
-result_mem <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir,
-                       memory_base = file.path(tempdir(), "test_memory"))
-expect_true(grepl("something important", result_mem))
 
 # --- Cleanup ---
 unlink(scan_dir, recursive = TRUE)
 unlink(briefs_dir, recursive = TRUE)
-unlink(file.path(tempdir(), "test_memory"), recursive = TRUE)

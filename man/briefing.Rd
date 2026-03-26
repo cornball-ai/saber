@@ -4,9 +4,7 @@
 \title{Project briefings}
 \usage{
 briefing(project = NULL, scan_dir = path.expand("~"),
-         memory_base = file.path(path.expand("~"), ".claude", "projects"),
-         briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
-         max_memory_lines = 30L)
+         briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"))
 }
 \arguments{
 \item{project}{Project name. If NULL, inferred from the current working
@@ -14,11 +12,7 @@ directory basename.}
 
 \item{scan_dir}{Directory to scan for project directories.}
 
-\item{memory_base}{Base directory for Claude Code project memory files.}
-
 \item{briefs_dir}{Directory to write briefing markdown files.}
-
-\item{max_memory_lines}{Maximum lines to include from the memory file.}
 }
 \value{
 The briefing text (character string), returned invisibly. Printed
@@ -29,7 +23,7 @@ Generate project context for AI coding agents.
 Generate a project briefing
 
 Produces a concise markdown briefing combining DESCRIPTION metadata,
-downstream dependents, 'Claude Code' memory, and recent git commits.
+downstream dependents and recent git commits.
 Written to the user cache directory so both the agent and user
 see the same context.
 }
