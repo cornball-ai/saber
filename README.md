@@ -7,6 +7,8 @@ saber ("to know" in Spanish, pronounced [sah-BEHR](https://www.youtube.com/watch
 ## Install
 
 ```r
+install.packages("saber")
+# or to install the development version
 remotes::install_github("cornball-ai/saber")
 ```
 
