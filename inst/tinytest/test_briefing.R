@@ -45,6 +45,32 @@ expect_true(grepl("init", result))
 outfile <- file.path(briefs_dir, "demopkg.md")
 expect_true(file.exists(outfile))
 
+# --- briefing skips memory when CLAUDECODE is set ---
+old_cc <- Sys.getenv("CLAUDECODE")
+Sys.setenv(CLAUDECODE = "1")
+mem_base <- file.path(scan_dir, ".claude_mem")
+mem_dir <- file.path(mem_base, "-home-user-demopkg", "memory")
+dir.create(mem_dir, recursive = TRUE, showWarnings = FALSE)
+writeLines("- [Test](test.md) - a test memory", file.path(mem_dir, "MEMORY.md"))
+printed_cc <- capture.output(
+    result_cc <- briefing("demopkg", scan_dir = scan_dir,
+                          memory_base = mem_base, briefs_dir = briefs_dir)
+)
+expect_false(grepl("Memory", result_cc))
+if (nchar(old_cc) > 0L) Sys.setenv(CLAUDECODE = old_cc) else Sys.unsetenv("CLAUDECODE")
+
+# --- briefing includes memory when CLAUDECODE is NOT set ---
+old_cc2 <- Sys.getenv("CLAUDECODE")
+Sys.unsetenv("CLAUDECODE")
+printed_mem <- capture.output(
+    result_mem <- briefing("demopkg", scan_dir = scan_dir,
+                           memory_base = mem_base, briefs_dir = briefs_dir)
+)
+expect_true(grepl("Memory", result_mem))
+expect_true(grepl("test memory", result_mem))
+if (nchar(old_cc2) > 0L) Sys.setenv(CLAUDECODE = old_cc2) else Sys.unsetenv("CLAUDECODE")
+unlink(mem_base, recursive = TRUE)
+
 # --- briefing handles missing project gracefully ---
 result_missing <- briefing("nonexistent", scan_dir = scan_dir,
                            briefs_dir = briefs_dir)
