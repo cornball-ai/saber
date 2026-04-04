@@ -13,4 +13,8 @@ Changes since 0.2.0 (current CRAN version):
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 1 note
+
+- NOTE: "Days since last update: 5" — this update addresses reviewer
+  feedback from the previous submission (expand AST acronym) and adds
+  multi-agent support for the briefing hook.
