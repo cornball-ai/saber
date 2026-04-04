@@ -7,6 +7,8 @@ saber ("to know" in Spanish, pronounced [sah-BEHR](https://www.youtube.com/watch
 ## Install
 
 ```r
+install.packages("saber")
+# or to install the development version
 remotes::install_github("cornball-ai/saber")
 ```
 
@@ -153,7 +155,6 @@ Then add the hook to `~/.codex/hooks.json`:
 Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), and recent git commits already in context.
 
 ## Claude Code integration
-
 Add the following to your `~/.claude/CLAUDE.md` to teach Claude Code how to use saber:
 
 ```markdown
