@@ -4,18 +4,23 @@
 #' Generate a project briefing
 #'
 #' Produces a concise markdown briefing combining DESCRIPTION metadata,
-#' downstream dependents, 'Claude Code' memory, and recent git commits.
-#' Written to \code{~/.cache/R/saber/briefs/} so both the agent and user
+#' downstream dependents, 'Claude Code' memory (when not running inside
+#' 'Claude Code' itself), and recent git commits.
+#' Written to the user cache directory so both the agent and user
 #' see the same context.
 #'
 #' @param project Project name. If NULL, inferred from the current working
 #'   directory basename.
 #' @param scan_dir Directory to scan for project directories.
-#' @param memory_base Base directory for Claude Code project memory files.
+#' @param agent Which coding agent is calling: \code{"claude"}, \code{"codex"},
+#'   or \code{NULL} (interactive / unknown). When \code{"claude"}, the briefing
+#'   skips 'Claude Code' memory (which 'Claude Code' autoloads separately).
+#'   Other values include it.
+#' @param memory_base Base directory for 'Claude Code' project memory files.
 #' @param briefs_dir Directory to write briefing markdown files.
 #' @param max_memory_lines Maximum lines to include from the memory file.
-#' @return The briefing text (character string), returned invisibly. Also
-#'   written to \code{briefs_dir/{project}.md}.
+#' @return The briefing text (character string), returned invisibly. Printed
+#'   to stdout and written to \code{briefs_dir/{project}.md}.
 #' @examples
 #' d <- file.path(tempdir(), "briefpkg")
 #' dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
@@ -25,6 +30,7 @@
 #'          briefs_dir = file.path(tempdir(), "briefs"))
 #' @export
 briefing <- function(project = NULL, scan_dir = path.expand("~"),
+                     agent = NULL,
                      memory_base = file.path(path.expand("~"), ".claude", "projects"),
                      briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
                      max_memory_lines = 30L) {
@@ -49,9 +55,12 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
         lines <- c(lines, ds, "")
     }
 
-    mem <- briefing_memory(project, memory_base, max_memory_lines)
-    if (length(mem) > 0L) {
-        lines <- c(lines, mem, "")
+    include_claude_mem <- is.null(agent) || agent != "claude"
+    if (include_claude_mem) {
+        mem <- briefing_memory(project, memory_base, max_memory_lines)
+        if (length(mem) > 0L) {
+            lines <- c(lines, mem, "")
+        }
     }
 
     git <- briefing_git(project, scan_dir)
@@ -64,6 +73,7 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
     outfile <- file.path(briefs_dir, paste0(project, ".md"))
     writeLines(lines, outfile)
 
+    cat(text, "\n", sep = "")
     invisible(text)
 }
 

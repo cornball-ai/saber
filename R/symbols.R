@@ -6,7 +6,7 @@
 #'
 #' Parses all \code{R/*.R} files in a project directory using
 #' \code{getParseData()} to extract function definitions and function calls.
-#' Results are cached as RDS in \code{~/.cache/R/saber/symbols/}.
+#' Results are cached as RDS in the user cache directory.
 #'
 #' @param project_dir Path to the project directory.
 #' @param cache_dir Directory for symbol cache files.

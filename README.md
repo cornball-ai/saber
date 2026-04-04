@@ -62,7 +62,7 @@ saber::find_downstream("jsonlite")
 Generate a project briefing for an AI agent:
 
 ```r
-cat(saber::briefing("saber"))
+saber::briefing("saber")
 #> # Briefing: saber
 #> _Generated 2026-03-25 00:30_
 #>
@@ -85,16 +85,76 @@ saber::pkg_help("symbols", "saber")
 
 ## How it works
 
-`symbols()` runs `getParseData()` on every `R/*.R` file in a project, extracts function definitions and call sites, and caches the results as RDS in `~/.cache/R/saber/symbols/`. Cache invalidates on file content changes (MD5).
+`symbols()` runs `getParseData()` on every `R/*.R` file in a project, extracts function definitions and call sites, and caches the results as RDS in the user cache directory. Cache invalidates on file content changes (MD5).
 
 `blast_radius()` builds on top of `symbols()`. It finds internal callers, then scans `~/` for any project whose DESCRIPTION declares a dependency on the target package. Traces the call graph across all of them.
 
 `projects()` scans for directories containing DESCRIPTION files and reads their metadata. `find_downstream()` does the same scan but filters to projects that depend on a specific package.
 
-`briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. Writes to `~/.cache/R/saber/briefs/` so both the agent and user see the same context.
+`briefing()` assembles project context from DESCRIPTION metadata, downstream dependents, Claude Code memory files, and recent git commits. It prints the briefing to stdout, returns the same text invisibly, and writes the markdown to the user cache directory so both the agent and user see the same context. An `agent` parameter controls memory inclusion: `agent = "claude"` skips Claude Code memory (since Claude Code autoloads it), while other values include it.
+
+## Codex integration
+
+Codex reads `AGENTS.md` files automatically before it starts work. This repo ships one at the root; for your own R projects, add rules like these so Codex reaches for saber instead of guessing:
+
+```markdown
+## saber Toolchain Rules
+
+Before working on R code, use the right tool for the job:
+
+| Situation | Command |
+|-----------|---------|
+| Understand a package's API | `r -e 'saber::pkg_exports("pkg")'` |
+| Read function docs | `r -e 'saber::pkg_help("fn", "pkg")'` |
+| Before renaming/changing a function | `r -e 'saber::blast_radius("fn", project = ".")'` |
+| Understand a project's call graph | `r -e 'str(saber::symbols("."))'` |
+| Discover R packages and deps | `r -e 'print(saber::projects())'` |
+| What depends on a package | `r -e 'saber::find_downstream("pkg")'` |
+| Project briefing | `r -e 'saber::briefing("project")'` |
+
+**blast_radius is mandatory before renaming, moving, or changing the signature of any exported function.** It finds every caller across this project and all downstream projects. Skip it and you break things silently.
+```
+
+### SessionStart hook
+
+saber ships a hook script that injects a project briefing into Codex at the start of every session. Find it with:
+
+```r
+system.file("scripts", "session-start.R", package = "saber")
+```
+
+Enable hooks in your Codex config (`~/.codex/config.toml`):
+
+```toml
+[features]
+codex_hooks = true
+```
+
+Then add the hook to `~/.codex/hooks.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Rscript /path/to/session-start.R codex",
+            "timeout": 15,
+            "statusMessage": "Loading saber briefing"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), and recent git commits already in context.
 
 ## Claude Code integration
-
 Add the following to your `~/.claude/CLAUDE.md` to teach Claude Code how to use saber:
 
 ```markdown
@@ -110,7 +170,7 @@ Before working on R code, use the right tool for the job:
 | Understand a project's call graph | `r -e 'str(saber::symbols("."))'` |
 | Discover R packages and deps | `r -e 'print(saber::projects())'` |
 | What depends on a package | `r -e 'saber::find_downstream("pkg")'` |
-| Project briefing | `r -e 'cat(saber::briefing("project"))'` |
+| Project briefing | `r -e 'saber::briefing("project")'` |
 
 **blast_radius is mandatory before renaming, moving, or changing the signature of any exported function.** It finds every caller across this project and all downstream projects. Skip it and you break things silently.
 ```
@@ -133,7 +193,7 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
         "hooks": [
           {
             "type": "command",
-            "command": "Rscript /path/to/session-start.R",
+            "command": "Rscript /path/to/session-start.R claude",
             "timeout": 15
           }
         ]
@@ -143,7 +203,7 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-Every new session starts with the project's metadata, downstream dependents, Claude Code memory, and recent git commits already in context.
+Every new session starts with the project's metadata, downstream dependents, and recent git commits already in context. The `claude` agent flag tells `briefing()` to skip Claude Code memory (which Claude Code autoloads separately).
 
 ## License
 

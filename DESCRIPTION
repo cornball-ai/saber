@@ -1,11 +1,11 @@
 Package: saber
 Type: Package
 Title: Code Analysis and Project Context for R
-Version: 0.2.0
+Version: 0.3.0
 Authors@R: person("Troy", "Hernandez", role = c("aut", "cre"),
     email = "troy@cornball.ai",
     comment = c(ORCID = "0009-0005-4248-604X"))
-Description: Parses R source files into AST symbol indices, traces function
+Description: Parses R source files into Abstract Syntax Tree (AST) symbol indices, traces function
     callers across projects, discovers project dependency graphs, generates
     project briefings, and provides package introspection tools. Designed
     for AI coding agents that need structured code understanding.
