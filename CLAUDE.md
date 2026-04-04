@@ -4,7 +4,7 @@
 
 saber ("to know") is a code analysis and project context package for R. It parses R source into structured symbol indices, traces function callers across projects, discovers dependency graphs, generates project briefings, and provides package introspection. Zero dependencies.
 
-You (Claude Code) are the primary consumer. Troy is the editor-of-last-resort.
+You (Claude Code) are the primary consumer. The user is the editor-of-last-resort.
 
 ## Design philosophy
 
@@ -66,7 +66,7 @@ NAMESPACE
 
 ## Things you should NOT do
 
-- Do not add dependencies without asking Troy
+- Do not add dependencies without asking the user
 - Do not use tidyverse functions or pipes
 
 ## Things you SHOULD do
