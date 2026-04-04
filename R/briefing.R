@@ -4,8 +4,9 @@
 #' Generate a project briefing
 #'
 #' Produces a concise markdown briefing combining DESCRIPTION metadata,
-#' downstream dependents, 'Claude Code' memory (when not running inside
-#' 'Claude Code' itself), and recent git commits.
+#' downstream dependents, 'Claude Code' memory (skipped when
+#' \code{agent = "claude"} since 'Claude Code' autoloads it), and
+#' recent git commits.
 #' Written to the user cache directory so both the agent and user
 #' see the same context.
 #'
