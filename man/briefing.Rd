@@ -3,7 +3,7 @@
 \alias{briefing}
 \title{Project briefings}
 \usage{
-briefing(project = NULL, scan_dir = path.expand("~"),
+briefing(project = NULL, scan_dir = path.expand("~"), agent = NULL,
          memory_base = file.path(path.expand("~"), ".claude", "projects"),
          briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
          max_memory_lines = 30L)
@@ -14,9 +14,12 @@ directory basename.}
 
 \item{scan_dir}{Directory to scan for project directories.}
 
-\item{memory_base}{Base directory for 'Claude Code' project memory files.
-Ignored when the \code{CLAUDECODE} environment variable is set, since
-'Claude Code' loads memory separately.}
+\item{agent}{Which coding agent is calling: \code{"claude"}, \code{"codex"},
+or \code{NULL} (interactive / unknown). When \code{"claude"}, the briefing
+skips 'Claude Code' memory (which 'Claude Code' autoloads separately).
+Other values include it.}
+
+\item{memory_base}{Base directory for 'Claude Code' project memory files.}
 
 \item{briefs_dir}{Directory to write briefing markdown files.}
 

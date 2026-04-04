@@ -12,9 +12,11 @@
 #' @param project Project name. If NULL, inferred from the current working
 #'   directory basename.
 #' @param scan_dir Directory to scan for project directories.
+#' @param agent Which coding agent is calling: \code{"claude"}, \code{"codex"},
+#'   or \code{NULL} (interactive / unknown). When \code{"claude"}, the briefing
+#'   skips 'Claude Code' memory (which 'Claude Code' autoloads separately).
+#'   Other values include it.
 #' @param memory_base Base directory for 'Claude Code' project memory files.
-#'   Ignored when the \code{CLAUDECODE} environment variable is set, since
-#'   'Claude Code' loads memory separately.
 #' @param briefs_dir Directory to write briefing markdown files.
 #' @param max_memory_lines Maximum lines to include from the memory file.
 #' @return The briefing text (character string), returned invisibly. Printed
@@ -28,6 +30,7 @@
 #'          briefs_dir = file.path(tempdir(), "briefs"))
 #' @export
 briefing <- function(project = NULL, scan_dir = path.expand("~"),
+                     agent = NULL,
                      memory_base = file.path(path.expand("~"), ".claude", "projects"),
                      briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
                      max_memory_lines = 30L) {
@@ -52,7 +55,8 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
         lines <- c(lines, ds, "")
     }
 
-    if (nchar(Sys.getenv("CLAUDECODE")) == 0L) {
+    include_claude_mem <- is.null(agent) || agent != "claude"
+    if (include_claude_mem) {
         mem <- briefing_memory(project, memory_base, max_memory_lines)
         if (length(mem) > 0L) {
             lines <- c(lines, mem, "")
