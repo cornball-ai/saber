@@ -152,7 +152,11 @@ Then add the hook to `~/.codex/hooks.json`:
 }
 ```
 
-Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), and recent git commits already in context.
+If you want neutral cross-agent preferences injected too, create
+`~/.config/agents/GLOBAL.md`. The hook appends it automatically after the
+project briefing. Set `AGENTS_GLOBAL_MD` if you want a different path.
+
+Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), recent git commits, and optional global preferences already in context.
 
 ## Claude Code integration
 Add the following to your `~/.claude/CLAUDE.md` to teach Claude Code how to use saber:
