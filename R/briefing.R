@@ -4,22 +4,16 @@
 #' Generate a project briefing
 #'
 #' Produces a concise markdown briefing combining DESCRIPTION metadata,
-#' downstream dependents, 'Claude Code' memory (skipped when
-#' \code{agent = "claude"} since 'Claude Code' autoloads it), and
-#' recent git commits.
-#' Written to the user cache directory so both the agent and user
-#' see the same context.
+#' downstream dependents, and recent git commits. Written to the user
+#' cache directory so both the agent and user see the same context.
+#'
+#' For runtime context (memory, identity files, project instructions),
+#' see \code{\link{agent_context}}.
 #'
 #' @param project Project name. If NULL, inferred from the current working
 #'   directory basename.
 #' @param scan_dir Directory to scan for project directories.
-#' @param agent Which coding agent is calling: \code{"claude"}, \code{"codex"},
-#'   or \code{NULL} (interactive / unknown). When \code{"claude"}, the briefing
-#'   skips 'Claude Code' memory (which 'Claude Code' autoloads separately).
-#'   Other values include it.
-#' @param memory_base Base directory for 'Claude Code' project memory files.
 #' @param briefs_dir Directory to write briefing markdown files.
-#' @param max_memory_lines Maximum lines to include from the memory file.
 #' @return The briefing text (character string), returned invisibly. Printed
 #'   to stdout and written to \code{briefs_dir/{project}.md}.
 #' @examples
@@ -31,10 +25,7 @@
 #'          briefs_dir = file.path(tempdir(), "briefs"))
 #' @export
 briefing <- function(project = NULL, scan_dir = path.expand("~"),
-                     agent = NULL,
-                     memory_base = file.path(path.expand("~"), ".claude", "projects"),
-                     briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"),
-                     max_memory_lines = 30L) {
+                     briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs")) {
     if (is.null(project)) {
         project <- basename(getwd())
     }
@@ -54,14 +45,6 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
     ds <- briefing_downstream(project, scan_dir)
     if (length(ds) > 0L) {
         lines <- c(lines, ds, "")
-    }
-
-    include_claude_mem <- is.null(agent) || agent != "claude"
-    if (include_claude_mem) {
-        mem <- briefing_memory(project, memory_base, max_memory_lines)
-        if (length(mem) > 0L) {
-            lines <- c(lines, mem, "")
-        }
     }
 
     git <- briefing_git(project, scan_dir)
@@ -134,43 +117,6 @@ briefing_downstream <- function(project, scan_dir) {
     lines <- "## Downstream dependents"
     for (d in ds) {
         lines <- c(lines, sprintf("- %s", d))
-    }
-    lines
-}
-
-#' 'Claude Code' memory section
-#' @noRd
-briefing_memory <- function(project, memory_base, max_lines) {
-    if (is.null(memory_base) || !dir.exists(memory_base)) {
-        return(character(0L))
-    }
-
-    mem_dirs <- list.dirs(memory_base, recursive = FALSE, full.names = TRUE)
-    mem_file <- NULL
-    for (md in mem_dirs) {
-        proj_encoded <- basename(md)
-        proj_name <- sub("^.*-home-[^-]+-", "", proj_encoded)
-        if (proj_name == project) {
-            candidate <- file.path(md, "memory", "MEMORY.md")
-            if (file.exists(candidate)) {
-                mem_file <- candidate
-                break
-            }
-        }
-    }
-
-    if (is.null(mem_file)) {
-        return(character(0L))
-    }
-
-    mem_lines <- readLines(mem_file, warn = FALSE)
-    lines <- "## Memory"
-    if (length(mem_lines) > max_lines) {
-        lines <- c(lines, mem_lines[seq_len(max_lines)],
-                   sprintf("_... truncated (%d more lines)_",
-                           length(mem_lines) - max_lines))
-    } else {
-        lines <- c(lines, mem_lines)
     }
     lines
 }

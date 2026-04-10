@@ -26,14 +26,27 @@ old_wd <- getwd()
 on.exit(setwd(old_wd), add = TRUE)
 setwd(sub_dir)
 
+home_dir <- file.path(scan_dir, "home")
+dir.create(file.path(home_dir, ".config", "agents"), recursive = TRUE,
+           showWarnings = FALSE)
+writeLines(c(
+    "# Global Development Preferences",
+    "",
+    "- Use saber before guessing."
+), file.path(home_dir, ".config", "agents", "GLOBAL.md"))
+
 output <- system2(file.path(R.home("bin"), "Rscript"), c(script, "claude"),
-                  stdout = TRUE, stderr = TRUE)
+                  stdout = TRUE, stderr = TRUE,
+                  env = c(sprintf("HOME=%s", home_dir)))
 
 expect_true(length(output) > 0L)
 expect_true(identical(trimws(output[[1L]]), "{"))
 expect_true(any(grepl('"hookEventName": "SessionStart"', output, fixed = TRUE)))
 expect_true(any(grepl('"additionalContext": "# Briefing: hookpkg\\\\n',
                       output)))
+expect_true(any(grepl("## Global Preferences\\n\\n# Global Development Preferences",
+                      output, fixed = TRUE)))
+expect_true(any(grepl("Use saber before guessing.", output, fixed = TRUE)))
 expect_false(any(grepl("^# Briefing: hookpkg$", output)))
 
 unlink(scan_dir, recursive = TRUE)

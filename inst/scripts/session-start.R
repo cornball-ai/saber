@@ -10,6 +10,34 @@ agent <- if (length(cli_args) > 0L) cli_args[[1L]] else NULL
 
 session_cwd <- getwd()
 
+global_preferences_path <- function() {
+    custom <- Sys.getenv("AGENTS_GLOBAL_MD", unset = "")
+    if (nchar(custom) > 0L) {
+        return(path.expand(custom))
+    }
+    path.expand("~/.config/agents/GLOBAL.md")
+}
+
+load_global_preferences <- function() {
+    path <- global_preferences_path()
+    if (!file.exists(path)) {
+        return(NULL)
+    }
+
+    lines <- tryCatch(readLines(path, warn = FALSE),
+                      error = function(e) NULL)
+    if (is.null(lines)) {
+        return(NULL)
+    }
+
+    text <- paste(lines, collapse = "\n")
+    if (nchar(trimws(text)) == 0L) {
+        return(NULL)
+    }
+
+    paste0("## Global Preferences\n\n", text, "\n")
+}
+
 resolve_repo_root <- function(path) {
     root <- tryCatch(
                     system2("git", c("-C", path, "rev-parse", "--show-toplevel"),
@@ -71,9 +99,8 @@ if (!is.null(repo_root)) {
 briefing_text <- tryCatch(
     {
         briefing_fun <- load_briefing_fun(repo_root)
-        capture.output(
-            briefing_text <- briefing_fun(project, scan_dir = scan_dir,
-                                          agent = agent)
+        utils::capture.output(
+            briefing_text <- briefing_fun(project, scan_dir = scan_dir)
         )
         briefing_text
     },
@@ -86,6 +113,11 @@ briefing_text <- tryCatch(
 if (is.null(briefing_text) || nchar(briefing_text) == 0L) {
     briefing_text <- paste0("# Briefing: ", project,
                             "\n_No briefing available._\n")
+}
+
+global_preferences <- load_global_preferences()
+if (!is.null(global_preferences)) {
+    briefing_text <- paste0(briefing_text, "\n\n", global_preferences)
 }
 
 escaped <- gsub("\\\\", "\\\\\\\\", briefing_text)
