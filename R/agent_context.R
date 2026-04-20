@@ -59,19 +59,18 @@
 #' saber::agent_context(agent = "claude", include_memory = TRUE)
 #' }
 #' @export
-agent_context <- function(agent = NULL,
-                          project_dir = getwd(),
+agent_context <- function(agent = NULL, project_dir = getwd(),
                           workspace_dir = NULL,
-                          memory_base = file.path(path.expand("~"),
-                                                  ".claude", "projects"),
-                          claude_global_path = file.path(path.expand("~"),
-                                                         ".claude", "CLAUDE.md"),
-                          include_memory = NULL,
-                          include_project = NULL,
-                          include_global = NULL,
-                          include_soul = NULL,
+                          memory_base = file.path(path.expand("~"), ".claude", "projects"),
+                          claude_global_path = file.path(path.expand("~"), ".claude", "CLAUDE.md"),
+                          include_memory = NULL, include_project = NULL,
+                          include_global = NULL, include_soul = NULL,
                           max_memory_lines = 100L) {
-    agent_key <- if (is.null(agent)) NA_character_ else as.character(agent)[1L]
+    if (is.null(agent)) {
+        agent_key <- NA_character_
+    } else {
+        agent_key <- as.character(agent)[1L]
+    }
 
     defaults <- agent_context_defaults(agent_key)
     incl_mem <- include_memory %||% defaults$memory
@@ -119,18 +118,15 @@ agent_context <- function(agent = NULL,
 #' @noRd
 agent_context_defaults <- function(agent) {
     if (is.na(agent)) {
-        return(list(memory = TRUE, project = TRUE,
-                    global = TRUE, soul = TRUE))
+        return(list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE))
     }
     switch(agent,
            claude = list(memory = FALSE, project = TRUE,
                          global = TRUE, soul = TRUE),
-           codex = list(memory = TRUE, project = TRUE,
-                        global = TRUE, soul = TRUE),
+           codex = list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE),
            llamar = list(memory = TRUE, project = TRUE,
                          global = TRUE, soul = TRUE),
-           list(memory = TRUE, project = TRUE,
-                global = TRUE, soul = TRUE)
+           list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE)
     )
 }
 
@@ -190,7 +186,11 @@ agent_context_project <- function(project_dir, agent, forced = FALSE) {
     file_to_load <- NULL
     if (forced || is.na(agent)) {
         # User overrode the default, or unknown agent: prefer CLAUDE.md
-        file_to_load <- if (claude_exists) claude_path else agents_path
+        if (claude_exists) {
+            file_to_load <- claude_path
+        } else {
+            file_to_load <- agents_path
+        }
     } else if (identical(agent, "claude")) {
         # claude autoloads CLAUDE.md; only load AGENTS.md if it exists
         # and is a distinct file
@@ -205,7 +205,11 @@ agent_context_project <- function(project_dir, agent, forced = FALSE) {
         }
     } else {
         # llamar / unknown: prefer CLAUDE.md, fall back to AGENTS.md
-        file_to_load <- if (claude_exists) claude_path else agents_path
+        if (claude_exists) {
+            file_to_load <- claude_path
+        } else {
+            file_to_load <- agents_path
+        }
     }
 
     if (is.null(file_to_load)) {
@@ -242,7 +246,11 @@ agent_context_global <- function(workspace_dir, agent, claude_global,
 
     file_to_load <- NULL
     if (forced || is.na(agent)) {
-        file_to_load <- if (claude_exists) claude_global else user_path
+        if (claude_exists) {
+            file_to_load <- claude_global
+        } else {
+            file_to_load <- user_path
+        }
     } else if (identical(agent, "claude")) {
         # claude autoloads ~/.claude/CLAUDE.md; only load USER.md
         if (user_exists && !same_file(claude_global, user_path)) {
@@ -250,7 +258,11 @@ agent_context_global <- function(workspace_dir, agent, claude_global,
         }
     } else {
         # codex / llamar / unknown: prefer claude global, fall back to USER.md
-        file_to_load <- if (claude_exists) claude_global else user_path
+        if (claude_exists) {
+            file_to_load <- claude_global
+        } else {
+            file_to_load <- user_path
+        }
     }
 
     if (is.null(file_to_load)) {
@@ -307,3 +319,4 @@ same_file <- function(a, b) {
 #' Null-coalescing operator
 #' @noRd
 `%||%` <- function(a, b) if (is.null(a)) b else a
+
