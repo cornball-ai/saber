@@ -14,4 +14,6 @@ export(pkg_internals)
 export(projects)
 export(symbols)
 
+importFrom(stats,runif)
 importFrom(utils,getParseData)
+importFrom(utils,head)
