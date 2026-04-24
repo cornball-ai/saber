@@ -29,6 +29,8 @@
 #'   deterministic given the same seed).
 #' @return Character vector, one SVG element per line. Write with
 #'   \code{writeLines()}.
+#' @importFrom stats runif
+#' @importFrom utils head
 #' @examples
 #' edges <- data.frame(from = c("a", "a", "b"),
 #'                     to = c("b", "c", "c"))
