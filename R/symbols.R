@@ -1,5 +1,6 @@
-#' @title AST symbol index
-#' @description Parse R source files to extract function definitions and calls.
+#' @title Code intelligence — AST symbol index
+#' @description Parse R source files into structured function definitions and
+#'   call relationships.
 #' @importFrom utils getParseData
 
 #' Build a symbol index for a project

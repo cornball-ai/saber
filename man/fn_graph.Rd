@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{fn_graph}
 \alias{fn_graph}
-\title{Function call graph}
+\title{Code intelligence — function call graph}
 \usage{
 fn_graph(project_dir, include_external = FALSE, ...)
 }
@@ -18,7 +18,8 @@ functions called from other packages. Default \code{FALSE}.}
 Character vector of SVG lines. Write with \code{writeLines()}.
 }
 \description{
-Render a package's internal function call graph.
+Render a project's internal function call graph as interactive
+  SVG.
 Render a function call graph for an R project
 
 Pulls the AST symbol index via \code{\link{symbols}} and renders

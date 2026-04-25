@@ -14,7 +14,8 @@ pkg_exports(package, pattern = NULL)
 A data.frame with columns: name, args.
 }
 \description{
-Query installed R packages for exports, internals, and help.
+Query installed R packages for exported functions, internal
+  functions, and help documentation.
 List exported functions of a package
 
 Returns a data.frame of exported functions with their argument signatures.

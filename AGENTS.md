@@ -2,7 +2,7 @@
 
 ## What This Is
 
-saber is a zero-dependency R package for code analysis and project context. It parses R source into symbol indices, traces callers across projects, discovers package metadata, generates project briefings, and inspects installed packages.
+saber is a zero-dependency R package for context engineering in R. It assembles agent context from memory and instruction files, traces function call blast radius across projects, generates project briefings, parses R source into structured symbol indices, discovers dependency graphs, and introspects installed packages.
 
 ## Working Rules
 

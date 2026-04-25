@@ -31,7 +31,7 @@ Character vector, one SVG element per line. Write with
   \code{writeLines()}.
 }
 \description{
-Render a graph as static SVG using a base R
+Render a graph as static, interactive SVG using a base R
   Fruchterman-Reingold force simulation.
 Render a graph as static SVG
 

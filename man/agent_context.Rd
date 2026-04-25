@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{agent_context}
 \alias{agent_context}
-\title{Agent context loading}
+\title{Agent context assembly}
 \usage{
 agent_context(agent = NULL, project_dir = getwd(), workspace_dir = NULL,
               memory_base = file.path(path.expand("~"), ".claude", "projects"),
@@ -43,7 +43,8 @@ Character string of assembled context, or empty string if no
   context applies.
 }
 \description{
-Load standard context files for AI coding agents.
+Assemble context from memory, instructions, and identity files
+  for AI coding agents.
 Load context files for an AI coding agent
 
 Returns assembled context (memory, project/global instructions, agent
