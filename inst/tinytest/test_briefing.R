@@ -25,13 +25,14 @@ system2("git", c("-C", pkg_dir, "add", "-A"), stdout = FALSE, stderr = FALSE)
 system2("git", c("-C", pkg_dir, "commit", "-q", "-m", "init"),
         stdout = FALSE, stderr = FALSE)
 
-# --- briefing() returns invisible character, prints to stdout ---
-printed <- capture.output(
-    result <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir)
+# --- briefing() returns invisible character, emits via message() ---
+msgs <- capture.output(
+    result <- briefing("demopkg", scan_dir = scan_dir, briefs_dir = briefs_dir),
+    type = "message"
 )
 expect_true(is.character(result))
 expect_true(grepl("Briefing: demopkg", result))
-expect_true(any(grepl("Briefing: demopkg", printed)))
+expect_true(any(grepl("Briefing: demopkg", msgs)))
 
 # --- briefing includes DESCRIPTION metadata ---
 expect_true(grepl("Demo Package", result))
