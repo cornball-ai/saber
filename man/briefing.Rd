@@ -15,8 +15,8 @@ directory basename.}
 \item{briefs_dir}{Directory to write briefing markdown files.}
 }
 \value{
-The briefing text (character string), returned invisibly. Printed
-  to stdout and written to \code{briefs_dir/{project}.md}.
+The briefing text (character string), returned invisibly. Emitted
+  via \code{message()} and written to \code{briefs_dir/{project}.md}.
 }
 \description{
 Generate project context for AI coding agents.

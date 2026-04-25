@@ -72,7 +72,7 @@ conventions and picking the file relevant to the consumer:
 Override the defaults with the \code{include_*} parameters.
 }
 \examples{
-\dontrun{
+\donttest{
 # Codex agent in current project
 saber::agent_context(agent = "codex")
 

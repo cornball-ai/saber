@@ -14,8 +14,8 @@
 #'   directory basename.
 #' @param scan_dir Directory to scan for project directories.
 #' @param briefs_dir Directory to write briefing markdown files.
-#' @return The briefing text (character string), returned invisibly. Printed
-#'   to stdout and written to \code{briefs_dir/{project}.md}.
+#' @return The briefing text (character string), returned invisibly. Emitted
+#'   via \code{message()} and written to \code{briefs_dir/{project}.md}.
 #' @examples
 #' d <- file.path(tempdir(), "briefpkg")
 #' dir.create(file.path(d, "R"), recursive = TRUE, showWarnings = FALSE)
@@ -57,7 +57,7 @@ briefing <- function(project = NULL, scan_dir = path.expand("~"),
     outfile <- file.path(briefs_dir, paste0(project, ".md"))
     writeLines(lines, outfile)
 
-    cat(text, "\n", sep = "")
+    message(text)
     invisible(text)
 }
 

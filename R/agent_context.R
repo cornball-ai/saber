@@ -48,7 +48,7 @@
 #' @return Character string of assembled context, or empty string if no
 #'   context applies.
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' # Codex agent in current project
 #' saber::agent_context(agent = "codex")
 #'
