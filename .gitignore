@@ -6,3 +6,4 @@
 *.so
 *.dll
 misc/
+*.Rproj
