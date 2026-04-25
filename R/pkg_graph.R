@@ -1,5 +1,6 @@
-#' @title Package dependency graph
-#' @description Render the dependency graph across a set of R packages.
+#' @title Project discovery — package dependency graph
+#' @description Render the dependency graph across a set of R packages as
+#'   interactive SVG.
 
 #' Render a package-level dependency graph
 #'

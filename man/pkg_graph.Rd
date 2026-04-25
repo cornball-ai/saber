@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{pkg_graph}
 \alias{pkg_graph}
-\title{Package dependency graph}
+\title{Project discovery — package dependency graph}
 \usage{
 pkg_graph(scan_dir = path.expand("~"), packages = NULL,
           include_suggests = FALSE, ...)
@@ -22,7 +22,8 @@ packages in each project's \code{Suggests} field. Default
 Character vector of SVG lines. Write with \code{writeLines()}.
 }
 \description{
-Render the dependency graph across a set of R packages.
+Render the dependency graph across a set of R packages as
+  interactive SVG.
 Render a package-level dependency graph
 
 Discovers R packages under \code{scan_dir} via \code{\link{projects}},

@@ -1,5 +1,6 @@
 #' @title Package introspection
-#' @description Query installed R packages for exports, internals, and help.
+#' @description Query installed R packages for exported functions, internal
+#'   functions, and help documentation.
 
 #' List exported functions of a package
 #'

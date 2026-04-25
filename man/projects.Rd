@@ -15,7 +15,8 @@ A data.frame with columns: package, title, version, path, depends,
   imports.
 }
 \description{
-Discover R package projects and their dependency relationships.
+Discover R package projects and map their dependency
+  relationships.
 Discover R package projects
 
 Scans a directory for subdirectories containing a DESCRIPTION file and

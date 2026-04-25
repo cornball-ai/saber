@@ -1,5 +1,6 @@
 #' @title Project discovery
-#' @description Discover R package projects and their dependency relationships.
+#' @description Discover R package projects and map their dependency
+#'   relationships.
 
 #' Discover R package projects
 #'
