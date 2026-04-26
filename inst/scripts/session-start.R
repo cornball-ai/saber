@@ -99,10 +99,11 @@ if (!is.null(repo_root)) {
 briefing_text <- tryCatch(
     {
         briefing_fun <- load_briefing_fun(repo_root)
-        utils::capture.output(
-            briefing_text <- briefing_fun(project, scan_dir = scan_dir)
+        msg_lines <- utils::capture.output(
+            briefing_fun(project, scan_dir = scan_dir),
+            type = "message"
         )
-        briefing_text
+        paste(msg_lines, collapse = "\n")
     },
     error = function(e) {
         paste0("# Briefing: ", project,
