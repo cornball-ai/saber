@@ -317,7 +317,4 @@ same_file <- function(a, b) {
     identical(norm_a, norm_b)
 }
 
-#' Null-coalescing operator
-#' @noRd
-`%||%` <- function(a, b) if (is.null(a)) b else a
 
