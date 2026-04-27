@@ -7,3 +7,5 @@
 *.dll
 misc/
 *.Rproj
+.claude/
+CLAUDE.md
