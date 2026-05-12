@@ -12,12 +12,13 @@ agent_context(agent = NULL, project_dir = getwd(), workspace_dir = NULL,
 }
 \arguments{
 \item{agent}{Consumer identifier: \code{"claude"}, \code{"codex"},
-\code{"llamar"}, or \code{NULL} (interactive / unknown).}
+\code{"corteza"}, or \code{NULL} (interactive / unknown). The legacy
+\code{"llamar"} identifier is accepted as an alias for \code{"corteza"}.}
 
 \item{project_dir}{Project directory to scan for CLAUDE.md / AGENTS.md.}
 
 \item{workspace_dir}{Optional directory containing SOUL.md and USER.md
-(e.g. \code{~/.llamar/workspace}). If \code{NULL}, those files are
+(e.g. \code{~/.corteza/workspace}). If \code{NULL}, those files are
 skipped.}
 
 \item{memory_base}{Base directory for 'Claude Code' project memory files.}
@@ -36,7 +37,7 @@ file. Defaults to \code{~/.claude/CLAUDE.md}.}
 
 \item{include_soul}{Override default for SOUL.md inclusion.}
 
-\item{max_memory_lines}{Maximum lines to include from the memory file.}
+\item{max_memory_lines}{Maximum lines to include from each memory source.}
 }
 \value{
 Character string of assembled context, or empty string if no
@@ -53,12 +54,13 @@ agent natively are skipped to avoid duplication.
 
 Defaults per agent:
 \itemize{
-  \item \code{"claude"} - skips project memory and CLAUDE.md files
-    (autoloaded by 'Claude Code'). Loads AGENTS.md, USER.md, and SOUL.md
-    when present.
-  \item \code{"codex"} - skips AGENTS.md (autoloaded by Codex). Loads
-    project memory, CLAUDE.md, USER.md, and SOUL.md when present.
-  \item \code{"llamar"} or \code{NULL} - loads everything available.
+  \item \code{"claude"} - skips Claude Code project memory and CLAUDE.md
+    files (autoloaded by 'Claude Code'). Loads Codex memories, AGENTS.md,
+    USER.md, and SOUL.md when present.
+  \item \code{"codex"} - skips AGENTS.md and Codex memories (autoloaded by
+    Codex). Loads Claude Code project memory, CLAUDE.md, USER.md, and
+    SOUL.md when present.
+  \item \code{"corteza"} or \code{NULL} - loads everything available.
 }
 
 Project and global instructions are resolved by trying both naming
@@ -76,9 +78,9 @@ Override the defaults with the \code{include_*} parameters.
 # Codex agent in current project
 saber::agent_context(agent = "codex")
 
-# llamaR with workspace files
-saber::agent_context(agent = "llamar",
-                     workspace_dir = "~/.llamar/workspace")
+# Corteza with workspace files
+saber::agent_context(agent = "corteza",
+                     workspace_dir = "~/.corteza/workspace")
 
 # Force-include memory regardless of agent default
 saber::agent_context(agent = "claude", include_memory = TRUE)
