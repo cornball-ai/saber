@@ -120,7 +120,7 @@ blast_radius <- function(fn, project = NULL, include = "r",
 #' @noRd
 empty_blast_results <- function() {
     data.frame(caller = character(), project = character(),
-               file = character(), line = integer(),
-               source = character(), stringsAsFactors = FALSE)
+               file = character(), line = integer(), source = character(),
+               stringsAsFactors = FALSE)
 }
 

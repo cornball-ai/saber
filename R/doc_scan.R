@@ -42,12 +42,9 @@ scan_examples <- function(project_dir, fn) {
                 next
             }
             results <- rbind(results,
-                             data.frame(caller = b$documented_fn,
-                                        project = project_name,
-                                        file = basename(fp),
-                                        line = b$line_nums[hits],
-                                        source = "example",
-                                        stringsAsFactors = FALSE))
+                             data.frame(caller = b$documented_fn, project = project_name,
+                                        file = basename(fp), line = b$line_nums[hits],
+                                        source = "example", stringsAsFactors = FALSE))
         }
     }
 
@@ -138,10 +135,8 @@ extract_example_blocks <- function(lines) {
             }
 
             documented_fn <- next_defined_fn(lines, i, n)
-            blocks[[length(blocks) + 1L]] <- list(
-                line_nums = line_nums,
-                documented_fn = documented_fn
-            )
+            blocks[[length(blocks) + 1L]] <- list(line_nums = line_nums,
+                documented_fn = documented_fn)
         } else {
             i <- i + 1L
         }
@@ -235,7 +230,7 @@ match_fn_lines <- function(lines, fn) {
 #' @noRd
 empty_doc_results <- function() {
     data.frame(caller = character(), project = character(),
-               file = character(), line = integer(),
-               source = character(), stringsAsFactors = FALSE)
+               file = character(), line = integer(), source = character(),
+               stringsAsFactors = FALSE)
 }
 

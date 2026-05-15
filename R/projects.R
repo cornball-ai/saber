@@ -33,8 +33,8 @@ projects <- function(scan_dir = path.expand("~"), exclude = default_exclude()) {
 
         dcf <- tryCatch(
                         read.dcf(desc_file,
-                                 fields = c("Package", "Title", "Version",
-                    "Depends", "Imports", "LinkingTo")),
+                                 fields = c("Package", "Title", "Version", "Depends",
+                    "Imports", "LinkingTo")),
                         error = function(e) NULL
         )
         if (is.null(dcf) || nrow(dcf) == 0L) {

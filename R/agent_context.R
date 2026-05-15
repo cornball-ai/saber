@@ -10,12 +10,13 @@
 #'
 #' Defaults per agent:
 #' \itemize{
-#'   \item \code{"claude"} - skips project memory and CLAUDE.md files
-#'     (autoloaded by 'Claude Code'). Loads AGENTS.md, USER.md, and SOUL.md
-#'     when present.
-#'   \item \code{"codex"} - skips AGENTS.md (autoloaded by Codex). Loads
-#'     project memory, CLAUDE.md, USER.md, and SOUL.md when present.
-#'   \item \code{"llamar"} or \code{NULL} - loads everything available.
+#'   \item \code{"claude"} - skips Claude Code project memory and CLAUDE.md
+#'     files (autoloaded by 'Claude Code'). Loads Codex memories, AGENTS.md,
+#'     USER.md, and SOUL.md when present.
+#'   \item \code{"codex"} - skips AGENTS.md and Codex memories (autoloaded by
+#'     Codex). Loads Claude Code project memory, CLAUDE.md, USER.md, and
+#'     SOUL.md when present.
+#'   \item \code{"corteza"} or \code{NULL} - loads everything available.
 #' }
 #'
 #' Project and global instructions are resolved by trying both naming
@@ -29,10 +30,11 @@
 #' Override the defaults with the \code{include_*} parameters.
 #'
 #' @param agent Consumer identifier: \code{"claude"}, \code{"codex"},
-#'   \code{"llamar"}, or \code{NULL} (interactive / unknown).
+#'   \code{"corteza"}, or \code{NULL} (interactive / unknown). The legacy
+#'   \code{"llamar"} identifier is accepted as an alias for \code{"corteza"}.
 #' @param project_dir Project directory to scan for CLAUDE.md / AGENTS.md.
 #' @param workspace_dir Optional directory containing SOUL.md and USER.md
-#'   (e.g. \code{~/.llamar/workspace}). If \code{NULL}, those files are
+#'   (e.g. \code{~/.corteza/workspace}). If \code{NULL}, those files are
 #'   skipped.
 #' @param memory_base Base directory for 'Claude Code' project memory files.
 #' @param claude_global_path Path to the global 'Claude Code' instructions
@@ -44,7 +46,7 @@
 #' @param include_global Override default for global instructions
 #'   (~/.claude/CLAUDE.md / USER.md).
 #' @param include_soul Override default for SOUL.md inclusion.
-#' @param max_memory_lines Maximum lines to include from the memory file.
+#' @param max_memory_lines Maximum lines to include from each memory source.
 #' @return Character string of assembled context, or empty string if no
 #'   context applies.
 #' @examples
@@ -52,9 +54,9 @@
 #' # Codex agent in current project
 #' saber::agent_context(agent = "codex")
 #'
-#' # llamaR with workspace files
-#' saber::agent_context(agent = "llamar",
-#'                      workspace_dir = "~/.llamar/workspace")
+#' # Corteza with workspace files
+#' saber::agent_context(agent = "corteza",
+#'                      workspace_dir = "~/.corteza/workspace")
 #'
 #' # Force-include memory regardless of agent default
 #' saber::agent_context(agent = "claude", include_memory = TRUE)
@@ -75,6 +77,7 @@ agent_context <- function(agent = NULL, project_dir = getwd(),
 
     defaults <- agent_context_defaults(agent_key)
     incl_mem <- include_memory %||% defaults$memory
+    incl_codex_mem <- include_memory %||% defaults$codex_memory
     incl_proj <- include_project %||% defaults$project
     incl_glob <- include_global %||% defaults$global
     incl_soul <- include_soul %||% defaults$soul
@@ -85,6 +88,13 @@ agent_context <- function(agent = NULL, project_dir = getwd(),
         mem <- agent_context_memory(project_dir, memory_base, max_memory_lines)
         if (length(mem) > 0L) {
             parts <- c(parts, mem, "")
+        }
+    }
+
+    if (isTRUE(incl_codex_mem)) {
+        codex_mem <- agent_context_codex_memory(max_memory_lines)
+        if (length(codex_mem) > 0L) {
+            parts <- c(parts, codex_mem, "")
         }
     }
 
@@ -119,15 +129,20 @@ agent_context <- function(agent = NULL, project_dir = getwd(),
 #' @noRd
 agent_context_defaults <- function(agent) {
     if (is.na(agent)) {
-        return(list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE))
+        return(list(memory = TRUE, codex_memory = TRUE, project = TRUE,
+                    global = TRUE, soul = TRUE))
     }
     switch(agent,
-           claude = list(memory = FALSE, project = TRUE,
+           claude = list(memory = FALSE, codex_memory = TRUE, project = TRUE,
                          global = TRUE, soul = TRUE),
-           codex = list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE),
-           llamar = list(memory = TRUE, project = TRUE,
+           codex = list(memory = TRUE, codex_memory = FALSE, project = TRUE,
+                        global = TRUE, soul = TRUE),
+           corteza = list(memory = TRUE, codex_memory = TRUE, project = TRUE,
+                          global = TRUE, soul = TRUE),
+           llamar = list(memory = TRUE, codex_memory = TRUE, project = TRUE,
                          global = TRUE, soul = TRUE),
-           list(memory = TRUE, project = TRUE, global = TRUE, soul = TRUE)
+           list(memory = TRUE, codex_memory = TRUE, project = TRUE,
+                global = TRUE, soul = TRUE)
     )
 }
 
@@ -169,6 +184,75 @@ agent_context_memory <- function(project_dir, memory_base, max_lines) {
     lines
 }
 
+#' Load Codex memories for non-Codex agents
+#' @noRd
+agent_context_codex_memory <- function(max_lines) {
+    mem_dir <- agent_context_codex_memory_dir()
+    if (!dir.exists(mem_dir)) {
+        return(character(0L))
+    }
+
+    files <- list.files(mem_dir, recursive = TRUE, full.names = TRUE)
+    if (length(files) == 0L) {
+        return(character(0L))
+    }
+
+    info <- file.info(files)
+    keep <- !is.na(info$isdir) & !info$isdir & !is.na(info$size) &
+    info$size > 0L
+    files <- sort(files[keep])
+    if (length(files) == 0L) {
+        return(character(0L))
+    }
+
+    max_lines <- max(1L, as.integer(max_lines)[1L])
+    remaining <- max_lines
+    out <- "## Codex Memories"
+    truncated <- FALSE
+
+    for (i in seq_along(files)) {
+        if (remaining <= 0L) {
+            truncated <- TRUE
+            break
+        }
+
+        content <- tryCatch(readLines(files[[i]], warn = FALSE),
+                            error = function(e) character(0L))
+        if (length(content) == 0L) {
+            next
+        }
+
+        take <- min(length(content), remaining)
+        label <- substring(files[[i]], nchar(mem_dir) + 2L)
+        label <- gsub("\\\\", "/", label)
+        out <- c(out, "", sprintf("### %s", label), "", content[seq_len(take)])
+        remaining <- remaining - take
+
+        if (take < length(content)) {
+            truncated <- TRUE
+            break
+        }
+    }
+
+    if (length(out) == 1L) {
+        return(character(0L))
+    }
+    if (truncated) {
+        out <- c(out, sprintf("_... truncated after %d lines_", max_lines))
+    }
+    out
+}
+
+#' Resolve the Codex memory directory
+#' @noRd
+agent_context_codex_memory_dir <- function() {
+    codex_home <- Sys.getenv("CODEX_HOME", unset = "")
+    if (nchar(codex_home) == 0L) {
+        codex_home <- file.path(path.expand("~"), ".codex")
+    }
+    file.path(path.expand(codex_home), "memories")
+}
+
 #' Resolve and load project instructions (CLAUDE.md or AGENTS.md)
 #'
 #' Picks the file the consumer doesn't already autoload. Ties broken by
@@ -205,7 +289,7 @@ agent_context_project <- function(project_dir, agent, forced = FALSE) {
             file_to_load <- claude_path
         }
     } else {
-        # llamar / unknown: prefer CLAUDE.md, fall back to AGENTS.md
+        # corteza / legacy aliases / unknown: prefer CLAUDE.md, fall back to AGENTS.md
         if (claude_exists) {
             file_to_load <- claude_path
         } else {
@@ -258,7 +342,8 @@ agent_context_global <- function(workspace_dir, agent, claude_global,
             file_to_load <- user_path
         }
     } else {
-        # codex / llamar / unknown: prefer claude global, fall back to USER.md
+        # codex / corteza / legacy aliases / unknown: prefer claude global,
+        # fall back to USER.md
         if (claude_exists) {
             file_to_load <- claude_global
         } else {
@@ -316,5 +401,4 @@ same_file <- function(a, b) {
                        error = function(e) b)
     identical(norm_a, norm_b)
 }
-
 

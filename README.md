@@ -167,7 +167,13 @@ Enable hooks in your Codex config (`~/.codex/config.toml`):
 
 ```toml
 [features]
-codex_hooks = true
+hooks = true
+```
+
+You can also enable the same feature from the CLI:
+
+```bash
+codex --enable hooks
 ```
 
 Then add the hook to `~/.codex/hooks.json`:
@@ -191,6 +197,9 @@ Then add the hook to `~/.codex/hooks.json`:
   }
 }
 ```
+
+Codex may require new or changed hooks to be reviewed before they run. Open
+`/hooks` in Codex and approve the `session-start.R` command after adding it.
 
 If you want neutral cross-agent preferences injected too, create
 `~/.config/agents/GLOBAL.md`. The hook appends it automatically after the

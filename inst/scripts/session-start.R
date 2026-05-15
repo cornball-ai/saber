@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# saber - generate project briefing at session start
+# saber - generate project context at session start
 # For use as a Claude Code or Codex SessionStart hook
 #
 # Usage: Rscript session-start.R [agent]
@@ -55,7 +55,7 @@ resolve_repo_root <- function(path) {
     path.expand(root)
 }
 
-load_briefing_fun <- function(repo_root = NULL) {
+load_saber_fun <- function(name, repo_root = NULL) {
     if (!is.null(repo_root)) {
         local_fun <- tryCatch(
                             {
@@ -71,7 +71,7 @@ load_briefing_fun <- function(repo_root = NULL) {
                                 for (f in r_files) {
                                     sys.source(f, envir = env)
                                 }
-                                get("briefing", envir = env, inherits = FALSE)
+                                get(name, envir = env, inherits = FALSE)
                             },
                             error = function(e) NULL
         )
@@ -81,24 +81,41 @@ load_briefing_fun <- function(repo_root = NULL) {
     }
 
     if (requireNamespace("saber", quietly = TRUE)) {
-        return(saber::briefing)
+        return(getExportedValue("saber", name))
     }
 
     stop("saber not available")
+}
+
+load_agent_memory <- function(agent, project_dir, repo_root = NULL) {
+    context_fun <- load_saber_fun("agent_context", repo_root)
+    context_fun(agent = agent, project_dir = project_dir,
+                include_project = FALSE,
+                include_global = FALSE,
+                include_soul = FALSE)
+}
+
+append_context <- function(text, section) {
+    if (is.null(section) || nchar(trimws(section)) == 0L) {
+        return(text)
+    }
+    paste0(text, "\n\n", section)
 }
 
 repo_root <- resolve_repo_root(session_cwd)
 if (!is.null(repo_root)) {
     project <- basename(repo_root)
     scan_dir <- dirname(repo_root)
+    project_dir <- repo_root
 } else {
     project <- basename(session_cwd)
     scan_dir <- path.expand("~")
+    project_dir <- session_cwd
 }
 
 briefing_text <- tryCatch(
     {
-        briefing_fun <- load_briefing_fun(repo_root)
+        briefing_fun <- load_saber_fun("briefing", repo_root)
         msg_lines <- utils::capture.output(
             briefing_fun(project, scan_dir = scan_dir),
             type = "message"
@@ -116,9 +133,15 @@ if (is.null(briefing_text) || nchar(briefing_text) == 0L) {
                             "\n_No briefing available._\n")
 }
 
+memory_text <- tryCatch(
+    load_agent_memory(agent, project_dir, repo_root),
+    error = function(e) NULL
+)
+briefing_text <- append_context(briefing_text, memory_text)
+
 global_preferences <- load_global_preferences()
 if (!is.null(global_preferences)) {
-    briefing_text <- paste0(briefing_text, "\n\n", global_preferences)
+    briefing_text <- append_context(briefing_text, global_preferences)
 }
 
 escaped <- gsub("\\\\", "\\\\\\\\", briefing_text)
