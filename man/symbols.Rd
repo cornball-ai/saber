@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{symbols}
 \alias{symbols}
-\title{Code intelligence — AST symbol index}
+\title{Code intelligence: AST symbol index}
 \usage{
 symbols(project_dir,
         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))

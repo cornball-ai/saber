@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{pkg_graph}
 \alias{pkg_graph}
-\title{Project discovery — package dependency graph}
+\title{Project discovery: package dependency graph}
 \usage{
 pkg_graph(scan_dir = path.expand("~"), packages = NULL,
           include_suggests = FALSE, ...)

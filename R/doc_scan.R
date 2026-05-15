@@ -165,7 +165,7 @@ next_defined_fn <- function(lines, start, n) {
         if (length(m[[1L]]) >= 2L) {
             return(m[[1L]][2L])
         }
-        # First non-blank non-roxygen line wasn't a function def — give up
+        # First non-blank non-roxygen line wasn't a function def; give up
         return("")
     }
     ""

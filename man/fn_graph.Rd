@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{fn_graph}
 \alias{fn_graph}
-\title{Code intelligence — function call graph}
+\title{Code intelligence: function call graph}
 \usage{
 fn_graph(project_dir, include_external = FALSE, ...)
 }
