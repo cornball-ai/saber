@@ -2,7 +2,7 @@
 
 ## Changes
 
-- Rebranded package as "Context Engineering for R".
+- Rebranded package as "Context Engineering for Large Language Model Agents".
 - `briefing()` now emits output via `message()` instead of `cat()` for CRAN compliance.
 - `agent_context()` examples use `\donttest{}` instead of `\dontrun{}`.
 - `agent_context()` and the SessionStart hook now load memory reciprocally:
@@ -12,6 +12,9 @@
   `[features].codex_hooks`.
 - Added `Depends: R (>= 4.4.0)` and removed local `%||%` definition (now in base R).
 - Added copyright holder `person("cornball.ai", role = "cph")` to `Authors@R`.
+- Expanded acronyms in DESCRIPTION ("AI", "AST") per CRAN policy.
+- Added `?saber` package-level help page.
+- README examples switched from `r -e` to `Rscript -e` for portability.
 
 # saber 0.7.0
 
