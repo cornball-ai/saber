@@ -9,10 +9,11 @@ Authors@R: c(
     person("cornball.ai", role = "cph"))
 Description: Context-engineering primitives for Artificial Intelligence (AI)
     coding agents working in R. Assembles agent context from memory and
-    instruction files (AGENTS.md, CLAUDE.md), traces function call blast
-    radius across projects, generates project briefings, parses source
-    into Abstract Syntax Tree (AST) symbol indices, discovers dependency
-    graphs, and introspects installed packages. Zero dependencies.
+    instruction files ('AGENTS.md', 'CLAUDE.md'), traces function call
+    blast radius across projects, generates project briefings, parses
+    source into Abstract Syntax Tree (AST) symbol indices, discovers
+    dependency graphs, and introspects installed packages.
+    Zero dependencies.
 License: Apache License (>= 2)
 Depends: R (>= 4.4.0)
 URL: https://github.com/cornball-ai/saber

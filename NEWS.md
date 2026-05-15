@@ -13,8 +13,13 @@
 - Added `Depends: R (>= 4.4.0)` and removed local `%||%` definition (now in base R).
 - Added copyright holder `person("cornball.ai", role = "cph")` to `Authors@R`.
 - Expanded acronyms in DESCRIPTION ("AI", "AST") per CRAN policy.
+- Single-quoted file-name references in DESCRIPTION ('AGENTS.md', 'CLAUDE.md').
 - Added `?saber` package-level help page.
 - README examples switched from `r -e` to `Rscript -e` for portability.
+- Fix `blast_radius()` vignette scan crashing on Windows paths (backslashes
+  were interpreted as regex backreferences).
+- Replace em-dashes in roxygen `@title` lines with colons to keep the
+  generated Rd files ASCII-clean.
 
 # saber 0.7.0
 
