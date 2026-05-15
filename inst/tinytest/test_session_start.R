@@ -1,4 +1,9 @@
-# Tests for session-start hook script
+# Tests for session-start hook script.
+# Exercises the hook end-to-end via a child Rscript with HOME / CODEX_HOME
+# redirected. The system2(env =) plumbing is not honored consistently on
+# Windows (env vars get passed as positional args to Rscript), so this is
+# gated to dev runs only.
+if (!at_home()) exit_file("Session-start hook is *nix dev-only.")
 
 scan_dir <- file.path(tempdir(), "test_session_start")
 pkg_dir <- file.path(scan_dir, "hookpkg")

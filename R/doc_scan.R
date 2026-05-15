@@ -92,7 +92,17 @@ scan_vignettes <- function(project_dir, fn) {
         if (length(hits) == 0L) {
             next
         }
-        rel <- sub(paste0("^", project_dir, "/?"), "", fp, fixed = FALSE)
+        # Strip project_dir prefix to get a relative path. Avoid regex
+        # since Windows path separators (\) would be interpreted as
+        # backreferences.
+        rel <- fp
+        for (sep in c("/", "\\")) {
+            pfx <- paste0(project_dir, sep)
+            if (startsWith(rel, pfx)) {
+                rel <- substr(rel, nchar(pfx) + 1L, nchar(rel))
+                break
+            }
+        }
         results <- rbind(results,
                          data.frame(caller = "<vignette>",
                                     project = project_name,
@@ -165,7 +175,7 @@ next_defined_fn <- function(lines, start, n) {
         if (length(m[[1L]]) >= 2L) {
             return(m[[1L]][2L])
         }
-        # First non-blank non-roxygen line wasn't a function def — give up
+        # First non-blank non-roxygen line wasn't a function def; give up
         return("")
     }
     ""

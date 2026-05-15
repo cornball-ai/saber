@@ -1,4 +1,4 @@
-#' @title Code intelligence — function call graph
+#' @title Code intelligence: function call graph
 #' @description Render a project's internal function call graph as interactive
 #'   SVG.
 

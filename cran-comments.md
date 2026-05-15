@@ -17,8 +17,9 @@ Changes since 0.3.0:
 
 ## Test environments
 
-- local Ubuntu 24.04, R 4.5.3
+- local Ubuntu 24.04, R 4.6.0
 - GitHub Actions (ubuntu-latest, macos-latest) via r-ci
+- win-builder (R-devel and R-release) via tinypkgr::check_win_devel()
 
 ## R CMD check results
 
@@ -26,4 +27,5 @@ Changes since 0.3.0:
 
 ## Downstream dependencies
 
-None on CRAN. Internal dependents: cerebelo, cerebro, corteza.
+CRAN reverse dependency: corteza (Imports). R CMD check on
+corteza 0.6.3 against this saber 0.7.1 build: Status OK.

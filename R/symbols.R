@@ -1,4 +1,4 @@
-#' @title Code intelligence — AST symbol index
+#' @title Code intelligence: AST symbol index
 #' @description Parse R source files into structured function definitions and
 #'   call relationships.
 #' @importFrom utils getParseData
