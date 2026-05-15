@@ -12,6 +12,18 @@ install.packages("saber")
 remotes::install_github("cornball-ai/saber")
 ```
 
+## Running these examples
+
+Examples below use `Rscript -e` for portability (Linux, macOS, Windows). On *nix (Linux and macOS), [littler](https://eddelbuettel.github.io/littler/) (`r`) gives faster startup, but `r -e` does not auto-print return values. These three are equivalent:
+
+```bash
+Rscript -e 'saber::pkg_exports("saber")'         # portable
+r -p -e 'saber::pkg_exports("saber")'            # littler, auto-print
+r -e 'print(saber::pkg_exports("saber"))'        # littler, explicit print
+```
+
+See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-development-toolchain/) for the full setup.
+
 ## What it does
 
 **13 exported functions.**
@@ -144,13 +156,13 @@ Before working on R code, use the right tool for the job:
 
 | Situation | Command |
 |-----------|---------|
-| Understand a package's API | `r -e 'saber::pkg_exports("pkg")'` |
-| Read function docs | `r -e 'saber::pkg_help("fn", "pkg")'` |
-| Before renaming/changing a function | `r -e 'saber::blast_radius("fn", project = ".")'` |
-| Understand a project's call graph | `r -e 'str(saber::symbols("."))'` |
-| Discover R packages and deps | `r -e 'print(saber::projects())'` |
-| What depends on a package | `r -e 'saber::find_downstream("pkg")'` |
-| Project briefing | `r -e 'saber::briefing("project")'` |
+| Understand a package's API | `Rscript -e 'saber::pkg_exports("pkg")'` |
+| Read function docs | `Rscript -e 'saber::pkg_help("fn", "pkg")'` |
+| Before renaming/changing a function | `Rscript -e 'saber::blast_radius("fn", project = ".")'` |
+| Understand a project's call graph | `Rscript -e 'str(saber::symbols("."))'` |
+| Discover R packages and deps | `Rscript -e 'saber::projects()'` |
+| What depends on a package | `Rscript -e 'saber::find_downstream("pkg")'` |
+| Project briefing | `Rscript -e 'saber::briefing("project")'` |
 
 **blast_radius is mandatory before renaming, moving, or changing the signature of any exported function.** It finds every caller across this project and all downstream projects. Skip it and you break things silently.
 ```
@@ -218,13 +230,13 @@ Before working on R code, use the right tool for the job:
 
 | Situation | Command |
 |-----------|---------|
-| Understand a package's API | `r -e 'saber::pkg_exports("pkg")'` |
-| Read function docs | `r -e 'saber::pkg_help("fn", "pkg")'` |
-| Before renaming/changing a function | `r -e 'saber::blast_radius("fn", project = ".")'` |
-| Understand a project's call graph | `r -e 'str(saber::symbols("."))'` |
-| Discover R packages and deps | `r -e 'print(saber::projects())'` |
-| What depends on a package | `r -e 'saber::find_downstream("pkg")'` |
-| Project briefing | `r -e 'saber::briefing("project")'` |
+| Understand a package's API | `Rscript -e 'saber::pkg_exports("pkg")'` |
+| Read function docs | `Rscript -e 'saber::pkg_help("fn", "pkg")'` |
+| Before renaming/changing a function | `Rscript -e 'saber::blast_radius("fn", project = ".")'` |
+| Understand a project's call graph | `Rscript -e 'str(saber::symbols("."))'` |
+| Discover R packages and deps | `Rscript -e 'saber::projects()'` |
+| What depends on a package | `Rscript -e 'saber::find_downstream("pkg")'` |
+| Project briefing | `Rscript -e 'saber::briefing("project")'` |
 
 **blast_radius is mandatory before renaming, moving, or changing the signature of any exported function.** It finds every caller across this project and all downstream projects. Skip it and you break things silently.
 ```
