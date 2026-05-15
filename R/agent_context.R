@@ -198,7 +198,8 @@ agent_context_codex_memory <- function(max_lines) {
     }
 
     info <- file.info(files)
-    keep <- !is.na(info$isdir) & !info$isdir & !is.na(info$size) & info$size > 0L
+    keep <- !is.na(info$isdir) & !info$isdir & !is.na(info$size) &
+    info$size > 0L
     files <- sort(files[keep])
     if (length(files) == 0L) {
         return(character(0L))
@@ -400,3 +401,4 @@ same_file <- function(a, b) {
                        error = function(e) b)
     identical(norm_a, norm_b)
 }
+
