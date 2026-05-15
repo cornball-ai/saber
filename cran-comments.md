@@ -19,7 +19,8 @@ Changes since 0.3.0:
 
 - local Ubuntu 24.04, R 4.6.0
 - GitHub Actions (ubuntu-latest, macos-latest) via r-ci
-- win-builder (R-devel and R-release) via tinypkgr::check_win_devel()
+- local Windows 10, R 4.6.0 + Rtools 4.5
+- local Windows 10, R-devel (2026-05-14 r90050) + Rtools 4.5
 
 ## R CMD check results
 
