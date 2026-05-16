@@ -59,10 +59,21 @@ load_saber_fun <- function(name, repo_root = NULL) {
     if (!is.null(repo_root)) {
         local_fun <- tryCatch(
                             {
+                                desc <- file.path(repo_root, "DESCRIPTION")
                                 r_dir <- file.path(repo_root, "R")
-                                if (!file.exists(file.path(repo_root, "DESCRIPTION")) ||
-                                    !dir.exists(r_dir)) {
+                                if (!file.exists(desc) || !dir.exists(r_dir)) {
                                     stop("No local package source found")
+                                }
+                                # Only source from the local repo when it IS
+                                # saber. Other packages may export a symbol
+                                # with the same name (e.g. cerebro::briefing)
+                                # but a different signature.
+                                pkg <- tryCatch(
+                                                read.dcf(desc, fields = "Package")[1L, "Package"],
+                                                error = function(e) NA_character_
+                                )
+                                if (is.na(pkg) || pkg != "saber") {
+                                    stop("Local package is not saber")
                                 }
 
                                 env <- new.env(parent = baseenv())
