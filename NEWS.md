@@ -1,3 +1,12 @@
+# saber 0.7.1.1
+
+## Changes
+
+- `fn_graph()` now accepts `cache_dir`, mirroring `blast_radius()` and
+  `symbols()`. The default is unchanged. The example and tinytest pass
+  `tempdir()` so R CMD check no longer leaves files under
+  `tools::R_user_dir("saber", "cache")`.
+
 # saber 0.7.1
 
 ## Changes
