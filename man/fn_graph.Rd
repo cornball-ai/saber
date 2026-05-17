@@ -3,7 +3,8 @@
 \alias{fn_graph}
 \title{Code intelligence: function call graph}
 \usage{
-fn_graph(project_dir, include_external = FALSE, ...)
+fn_graph(project_dir, include_external = FALSE, ...,
+         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
 }
 \arguments{
 \item{project_dir}{Path to the project directory (an R package root).}
@@ -13,6 +14,11 @@ functions called from other packages. Default \code{FALSE}.}
 
 \item{...}{Passed through to \code{\link{graph_svg}} (e.g.,
 \code{width}, \code{height}, \code{iterations}, \code{seed}).}
+
+\item{cache_dir}{Directory for the underlying \code{\link{symbols}}
+cache. Pass \code{tempdir()} (or any non-default path) when running
+examples / tests to avoid writing to the user's persistent cache.
+Name-only argument — must be passed by name.}
 }
 \value{
 Character vector of SVG lines. Write with \code{writeLines()}.
@@ -34,6 +40,6 @@ writeLines(c("Package: demo", "Version: 0.1.0"),
 writeLines("add <- function(x, y) x + y", file.path(d, "R", "add.R"))
 writeLines("double <- function(x) add(x, x)",
            file.path(d, "R", "double.R"))
-svg <- fn_graph(d)
+svg <- fn_graph(d, cache_dir = tempdir())
 writeLines(svg, tempfile(fileext = ".svg"))
 }
