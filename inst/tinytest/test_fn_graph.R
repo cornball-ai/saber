@@ -8,7 +8,7 @@ writeLines(c("Package: demo", "Version: 0.1.0"), file.path(d, "DESCRIPTION"))
 writeLines("add <- function(x, y) x + y", file.path(d, "R", "add.R"))
 writeLines("double <- function(x) add(x, x)", file.path(d, "R", "double.R"))
 
-svg <- fn_graph(d)
+svg <- fn_graph(d, cache_dir = tempdir())
 expect_true(is.character(svg))
 expect_true(any(grepl("^<svg", svg)))
 # Tooltips carry name + file:line + visibility + degree

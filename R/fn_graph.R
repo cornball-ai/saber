@@ -11,6 +11,9 @@
 #' @param project_dir Path to the project directory (an R package root).
 #' @param include_external If \code{TRUE}, also include nodes for
 #'   functions called from other packages. Default \code{FALSE}.
+#' @param cache_dir Directory for the underlying \code{\link{symbols}}
+#'   cache. Pass \code{tempdir()} (or any non-default path) when running
+#'   examples / tests to avoid writing to the user's persistent cache.
 #' @param ... Passed through to \code{\link{graph_svg}} (e.g.,
 #'   \code{width}, \code{height}, \code{iterations}, \code{seed}).
 #' @return Character vector of SVG lines. Write with \code{writeLines()}.
@@ -22,11 +25,13 @@
 #' writeLines("add <- function(x, y) x + y", file.path(d, "R", "add.R"))
 #' writeLines("double <- function(x) add(x, x)",
 #'            file.path(d, "R", "double.R"))
-#' svg <- fn_graph(d)
+#' svg <- fn_graph(d, cache_dir = tempdir())
 #' writeLines(svg, tempfile(fileext = ".svg"))
 #' @export
-fn_graph <- function(project_dir, include_external = FALSE, ...) {
-    idx <- symbols(project_dir)
+fn_graph <- function(project_dir, include_external = FALSE,
+                     cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
+                     ...) {
+    idx <- symbols(project_dir, cache_dir = cache_dir)
     defs <- idx$defs
     calls <- idx$calls
 
