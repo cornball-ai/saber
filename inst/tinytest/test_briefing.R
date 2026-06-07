@@ -55,6 +55,20 @@ result_missing <- briefing("nonexistent", scan_dir = scan_dir,
 expect_true(is.character(result_missing))
 expect_true(grepl("Briefing: nonexistent", result_missing))
 
+# --- briefing_git() does not leak a system2 warning on a non-repo (#33) ---
+# A directory with an invalid .git (passes dir.exists() but `git log` fails
+# with status 128) must return character(0) silently, not leak a warning.
+fakegit <- file.path(scan_dir, "fakegit")
+dir.create(file.path(fakegit, ".git"), recursive = TRUE, showWarnings = FALSE)
+expect_silent(git_out <- saber:::briefing_git("fakegit", scan_dir))
+expect_equal(git_out, character(0L))
+
+# A plain non-git directory is likewise silent and empty.
+plain <- file.path(scan_dir, "plaindir")
+dir.create(plain, showWarnings = FALSE)
+expect_silent(plain_out <- saber:::briefing_git("plaindir", scan_dir))
+expect_equal(plain_out, character(0L))
+
 # --- Cleanup ---
 unlink(scan_dir, recursive = TRUE)
 unlink(briefs_dir, recursive = TRUE)

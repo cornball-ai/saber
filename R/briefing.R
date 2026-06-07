@@ -125,13 +125,26 @@ briefing_downstream <- function(project, scan_dir) {
 #' @noRd
 briefing_git <- function(project, scan_dir) {
     repo_dir <- file.path(scan_dir, project)
-    if (!dir.exists(file.path(repo_dir, ".git"))) {
+
+    # Confirm this is a working tree before running git log. rev-parse handles
+    # cases dir.exists(".git") misses: worktrees (where .git is a file),
+    # dubious-ownership, and other states where git reports "not a repo" via a
+    # non-zero exit. suppressWarnings() keeps the resulting "had status 128"
+    # warning from leaking past this best-effort helper.
+    inside <- tryCatch(
+                       suppressWarnings(system2("git",
+                c("-C", repo_dir, "rev-parse", "--is-inside-work-tree"),
+                stdout = TRUE, stderr = FALSE)),
+                       error = function(e) character(0L)
+    )
+    if (length(inside) == 0L || !identical(inside[1L], "true")) {
         return(character(0L))
     }
 
     log <- tryCatch(
-                    system2("git", c("-C", repo_dir, "log", "--oneline", "-5"),
-                            stdout = TRUE, stderr = FALSE),
+                    suppressWarnings(system2("git",
+                c("-C", repo_dir, "log", "--oneline", "-5"),
+                stdout = TRUE, stderr = FALSE)),
                     error = function(e) character(0L)
     )
     if (length(log) == 0L) {

@@ -1,3 +1,12 @@
+# saber 0.7.1.2
+
+## Changes
+
+- `briefing_git()` no longer leaks a `system2()` "had status 128" warning
+  when run against a non-repository (e.g. a worktree, an invalid `.git`, or
+  a dubious-ownership directory). It now confirms the working tree with
+  `git rev-parse` and suppresses the warning, returning empty silently (#33).
+
 # saber 0.7.1.1
 
 ## Changes
