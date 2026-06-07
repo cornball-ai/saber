@@ -132,10 +132,10 @@ briefing_git <- function(project, scan_dir) {
     # non-zero exit. suppressWarnings() keeps the resulting "had status 128"
     # warning from leaking past this best-effort helper.
     inside <- tryCatch(
-                    suppressWarnings(system2("git",
-                            c("-C", repo_dir, "rev-parse", "--is-inside-work-tree"),
-                            stdout = TRUE, stderr = FALSE)),
-                    error = function(e) character(0L)
+                       suppressWarnings(system2("git",
+                c("-C", repo_dir, "rev-parse", "--is-inside-work-tree"),
+                stdout = TRUE, stderr = FALSE)),
+                       error = function(e) character(0L)
     )
     if (length(inside) == 0L || !identical(inside[1L], "true")) {
         return(character(0L))
@@ -143,8 +143,8 @@ briefing_git <- function(project, scan_dir) {
 
     log <- tryCatch(
                     suppressWarnings(system2("git",
-                            c("-C", repo_dir, "log", "--oneline", "-5"),
-                            stdout = TRUE, stderr = FALSE)),
+                c("-C", repo_dir, "log", "--oneline", "-5"),
+                stdout = TRUE, stderr = FALSE)),
                     error = function(e) character(0L)
     )
     if (length(log) == 0L) {
