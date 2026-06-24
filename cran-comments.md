@@ -1,32 +1,29 @@
 ## Submission
 
-This is saber 0.7.1, an update to the current CRAN version 0.3.0.
+This is saber 0.7.2, a maintenance update to CRAN version 0.7.1,
+consolidating the 0.7.1.x development cycle.
 
-Changes since 0.3.0:
+Changes since 0.7.1:
 
-- Rebranded as "Context Engineering for Large Language Model Agents" with updated title and description.
-- Added `agent_context()` for assembling agent context from memory and instruction files, with reciprocal cross-agent memory loading (Codex receives Claude `MEMORY.md`; Claude and other agents receive Codex memories).
-- Added `fn_graph()`, `pkg_graph()`, and `graph_svg()` for interactive SVG call graphs.
-- `blast_radius()` gains `include` parameter for scanning roxygen `@examples` and vignettes.
-- `briefing()` now emits output via `message()` instead of `cat()` for CRAN compliance.
-- `agent_context()` examples use `\donttest{}` instead of `\dontrun{}`.
-- Added `Depends: R (>= 4.4.0)` and removed local `%||%` operator definition (now in base R).
-- Added copyright holder `cornball.ai` to `Authors@R`.
-- Expanded acronyms ("AI", "AST") on first use in DESCRIPTION.
-- Added `?saber` package-level help page.
+- `fn_graph()` gains a `cache_dir` argument so its example and tests write
+  under `tempdir()` instead of the user cache (#32).
+- `briefing_git()` no longer emits a `system2()` "status 128" warning when
+  run against a non-repository (#33).
+- The SessionStart hook only sources a local package's `R/` when that package
+  is saber itself (#31).
 
 ## Test environments
 
 - local Ubuntu 24.04, R 4.6.0
-- GitHub Actions (ubuntu-latest, macos-latest) via r-ci
-- local Windows 10, R 4.6.0 + Rtools 4.5
-- local Windows 10, R-devel (2026-05-14 r90050) + Rtools 4.5
+- win-builder, R-devel
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes
+0 errors | 0 warnings | 0 notes (local Ubuntu, R 4.6.0).
 
 ## Downstream dependencies
 
-CRAN reverse dependency: corteza (Imports). R CMD check on
-corteza 0.6.3 against this saber 0.7.1 build: Status OK.
+CRAN reverse dependency: corteza (Imports). corteza 0.6.9 R CMD checks cleanly
+against this saber 0.7.2 build (tests, examples, and vignettes all OK). The
+only warning is the incoming-feasibility "version already exists" artifact from
+re-checking the published tarball, which is unrelated to saber.

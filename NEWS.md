@@ -1,20 +1,20 @@
-# saber 0.7.1.2
+# saber 0.7.2
 
-## Changes
-
-- `briefing_git()` no longer leaks a `system2()` "had status 128" warning
-  when run against a non-repository (e.g. a worktree, an invalid `.git`, or
-  a dubious-ownership directory). It now confirms the working tree with
-  `git rev-parse` and suppresses the warning, returning empty silently (#33).
-
-# saber 0.7.1.1
+Consolidates the 0.7.1.x development cycle.
 
 ## Changes
 
 - `fn_graph()` now accepts `cache_dir`, mirroring `blast_radius()` and
   `symbols()`. The default is unchanged. The example and tinytest pass
   `tempdir()` so R CMD check no longer leaves files under
-  `tools::R_user_dir("saber", "cache")`.
+  `tools::R_user_dir("saber", "cache")` (#32).
+- `briefing_git()` no longer leaks a `system2()` "had status 128" warning
+  when run against a non-repository (e.g. a worktree, an invalid `.git`, or
+  a dubious-ownership directory). It now confirms the working tree with
+  `git rev-parse` and suppresses the warning, returning empty silently (#33).
+- The SessionStart hook only sources a local package's `R/` when that package
+  is saber itself, so a same-named function exported by another project on the
+  load path is no longer picked up in place of saber's (#31).
 
 # saber 0.7.1
 

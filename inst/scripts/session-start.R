@@ -66,8 +66,8 @@ load_saber_fun <- function(name, repo_root = NULL) {
                                 }
                                 # Only source from the local repo when it IS
                                 # saber. Other packages may export a symbol
-                                # with the same name (e.g. cerebro::briefing)
-                                # but a different signature.
+                                # with the same name but a different
+                                # signature.
                                 pkg <- tryCatch(
                                                 read.dcf(desc, fields = "Package")[1L, "Package"],
                                                 error = function(e) NA_character_
