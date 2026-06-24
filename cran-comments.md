@@ -12,6 +12,13 @@ Changes since 0.7.1:
 - The SessionStart hook only sources a local package's `R/` when that package
   is saber itself (#31).
 
+This update resolves the NOTE in the CRAN additional `--run-donttest` checks
+(<https://www.stats.ox.ac.uk/pub/bdr/donttest/saber.out>), where the
+`fn_graph()` example left a cache file under `~/.cache/R/saber`. The
+`fn_graph()`, `symbols()`, `blast_radius()`, and `briefing()` examples and
+tests now direct their caches to `tempdir()`, so checks no longer write
+outside the session temporary directory.
+
 ## Test environments
 
 - local Ubuntu 24.04, R 4.6.0
