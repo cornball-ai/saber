@@ -16,7 +16,8 @@ You (Claude Code) are the primary consumer. The user is the editor-of-last-resor
 
 ```
 ~/.cache/R/saber/
-  symbols/   — per-project RDS caches from symbols()
+  symbols/   — per-project RDS caches from symbols() (<project>.rds) and
+               src_symbols() (<project>.src.rds)
   briefs/    — project briefing markdown files from briefing()
 ```
 
@@ -29,7 +30,8 @@ saber never writes outside this directory (except briefings, which also return t
 | Function | Purpose |
 |---|---|
 | `symbols(project_dir)` | AST symbol index: function defs and calls via `getParseData()` |
-| `blast_radius(fn, project)` | Find all callers of a function across projects |
+| `src_symbols(project_dir)` | C/C++ symbol index for `src/` via tree-sitter (optional bonsaisitter + treesitter.cpp) |
+| `blast_radius(fn, project)` | Find all callers of a function across projects; `include = "src"` covers C/C++ |
 
 ### Project discovery
 
@@ -52,6 +54,7 @@ saber never writes outside this directory (except briefings, which also return t
 ```
 R/
   symbols.R   — symbols(), AST symbol index via getParseData()
+  src_symbols.R — src_symbols(), C/C++ symbol index via bonsaisitter
   blast.R     — blast_radius(), cross-project caller tracing
   projects.R  — projects(), find_downstream(), project discovery
   briefing.R  — briefing(), project context generation
