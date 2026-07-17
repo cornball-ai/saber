@@ -145,4 +145,3 @@ empty_blast_results <- function() {
                file = character(), line = integer(), source = character(),
                stringsAsFactors = FALSE)
 }
-

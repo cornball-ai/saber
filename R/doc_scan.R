@@ -243,4 +243,3 @@ empty_doc_results <- function() {
                file = character(), line = integer(), source = character(),
                stringsAsFactors = FALSE)
 }
-

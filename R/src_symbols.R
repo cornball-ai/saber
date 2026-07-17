@@ -231,7 +231,8 @@ enclosing_src_def <- function(byte, defs) {
     if (nrow(defs) == 0L) {
         return("<top-level>")
     }
-    inside <- defs[defs$start_byte <= byte & defs$end_byte >= byte,, drop = FALSE]
+    inside <- defs[defs$start_byte <= byte &
+        defs$end_byte >= byte,, drop = FALSE]
     if (nrow(inside) == 0L) {
         return("<top-level>")
     }

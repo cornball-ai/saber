@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{briefing}
 \alias{briefing}
-\title{Project briefings}
+\title{Generate a project briefing}
 \usage{
 briefing(project = NULL, scan_dir = path.expand("~"),
          briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"))
@@ -19,15 +19,14 @@ The briefing text (character string), returned invisibly. Emitted
   via \code{message()} and written to \code{briefs_dir/{project}.md}.
 }
 \description{
-Generate project context for AI coding agents.
-Generate a project briefing
-
 Produces a concise markdown briefing combining DESCRIPTION metadata,
 downstream dependents, and recent git commits. Written to the user
 cache directory so both the agent and user see the same context.
-
+}
+\details{
 For runtime context (memory, identity files, project instructions),
 see \code{\link{agent_context}}.
+
 }
 \examples{
 d <- file.path(tempdir(), "briefpkg")

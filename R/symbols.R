@@ -289,4 +289,3 @@ enclosing_def <- function(line, def_ranges) {
     inside$span <- inside$end - inside$start
     inside$name[which.min(inside$span)]
 }
-
