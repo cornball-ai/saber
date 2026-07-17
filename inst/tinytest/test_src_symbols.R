@@ -70,6 +70,25 @@ if (has_cpp) {
                         cache_dir = tempdir())
     expect_false("vendored" %in% idx4$defs$name)
 
+    # default_src_exclude() carries the default_exclude() opt-outs, so
+    # user directories like Documents are skipped by default
+    expect_true(all(default_exclude() %in% default_src_exclude()))
+    dir.create(file.path(d, "Documents"), showWarnings = FALSE)
+    writeLines("int personal(void) { return 1; }",
+               file.path(d, "Documents", "note.c"))
+    idx5 <- src_symbols(d, cache_dir = tempdir())
+    expect_false("personal" %in% idx5$defs$name)
+
+    # *.Rcheck directories are always skipped, even with exclude = NULL
+    dir.create(file.path(d, "srcpkg.Rcheck"), showWarnings = FALSE)
+    writeLines("int checked(void) { return 1; }",
+               file.path(d, "srcpkg.Rcheck", "chk.c"))
+    idx6 <- src_symbols(d, exclude = NULL, cache_dir = tempdir())
+    expect_false("checked" %in% idx6$defs$name)
+    expect_true("personal" %in% idx6$defs$name)
+    unlink(file.path(d, "Documents"), recursive = TRUE)
+    unlink(file.path(d, "srcpkg.Rcheck"), recursive = TRUE)
+
     # blast_radius include = "src" reports the C caller
     unlink(file.path(d, "src", "vendor"), recursive = TRUE)
     br <- blast_radius("square", project = d, include = "src",

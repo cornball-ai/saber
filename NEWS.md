@@ -6,7 +6,9 @@
   `symbols()` with a `lang` column; `exported` marks definitions visible
   beyond their own file (non-`static` in C/C++, no leading underscore in
   Python). New `default_src_exclude()` lists directories skipped while
-  scanning.
+  scanning: the `default_exclude()` opt-outs (`Documents` and friends) plus
+  dependency/build trees; hidden and `*.Rcheck` directories are always
+  skipped.
 - `blast_radius()` gains `include = "src"` to report C/C++/Python callers
   from the target project's sources.
 

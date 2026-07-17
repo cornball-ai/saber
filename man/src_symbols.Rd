@@ -14,7 +14,11 @@ src_symbols(project_dir, langs = c("c", "cpp", "python"),
 \code{"cpp"}, \code{"python"} (all three by default).}
 
 \item{exclude}{Character vector of directory basenames to skip while
-scanning, e.g. vendored or generated trees.}
+scanning, e.g. vendored or generated trees. The default
+\code{\link{default_src_exclude}} includes the
+\code{\link{default_exclude}} opt-outs, so user directories such as
+\code{Documents} stay untouched even when scanning from a home
+directory.}
 
 \item{cache_dir}{Directory for symbol cache files.}
 }
@@ -32,9 +36,10 @@ Python (\code{.py}) sources and parses them into function definitions
 and call relationships, mirroring the shape of \code{\link{symbols}}
 with an added \code{lang} column. This covers the \code{src/} directory
 of an R package as well as repositories that are not R packages at all.
-Directories named in \code{exclude} (and hidden directories) are
-skipped. Results are cached as RDS in the user cache directory
-alongside the \code{symbols()} cache.
+Directories named in \code{exclude} are skipped, as are hidden
+directories and \code{*.Rcheck} directories, always. Results are
+cached as RDS in the user cache directory alongside the
+\code{symbols()} cache.
 }
 \details{
 A definition is marked \code{exported} when it is visible beyond its own

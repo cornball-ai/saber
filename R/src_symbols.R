@@ -10,9 +10,10 @@
 #' and call relationships, mirroring the shape of \code{\link{symbols}}
 #' with an added \code{lang} column. This covers the \code{src/} directory
 #' of an R package as well as repositories that are not R packages at all.
-#' Directories named in \code{exclude} (and hidden directories) are
-#' skipped. Results are cached as RDS in the user cache directory
-#' alongside the \code{symbols()} cache.
+#' Directories named in \code{exclude} are skipped, as are hidden
+#' directories and \code{*.Rcheck} directories, always. Results are
+#' cached as RDS in the user cache directory alongside the
+#' \code{symbols()} cache.
 #'
 #' A definition is marked \code{exported} when it is visible beyond its own
 #' file or module: for C/C++, definitions not declared \code{static}; for
@@ -29,7 +30,11 @@
 #' @param langs Character vector of languages to index. Any of \code{"c"},
 #'   \code{"cpp"}, \code{"python"} (all three by default).
 #' @param exclude Character vector of directory basenames to skip while
-#'   scanning, e.g. vendored or generated trees.
+#'   scanning, e.g. vendored or generated trees. The default
+#'   \code{\link{default_src_exclude}} includes the
+#'   \code{\link{default_exclude}} opt-outs, so user directories such as
+#'   \code{Documents} stay untouched even when scanning from a home
+#'   directory.
 #' @param cache_dir Directory for symbol cache files.
 #' @return A list with components:
 #'   \describe{
@@ -145,17 +150,20 @@ src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
 #' Default directories to exclude when scanning for source files
 #'
 #' Returns a character vector of directory basenames that
-#' \code{\link{src_symbols}} skips while scanning: dependency and build
-#' trees whose sources are not the project's own. Hidden directories
-#' (e.g. \code{.git}) are always skipped. Extend it for vendored code,
-#' e.g. \code{c(default_src_exclude(), "tree-sitter")}.
+#' \code{\link{src_symbols}} skips while scanning: everything in
+#' \code{\link{default_exclude}} (user directories such as
+#' \code{Documents}, plus caches and build artifacts), extended with
+#' dependency and build trees whose sources are not the project's own.
+#' Hidden directories (e.g. \code{.git}) and \code{*.Rcheck} directories
+#' are always skipped, whatever the \code{exclude} value. Extend it for
+#' vendored code, e.g. \code{c(default_src_exclude(), "tree-sitter")}.
 #'
 #' @return Character vector of directory basenames.
 #' @examples
 #' default_src_exclude()
 #' @export
 default_src_exclude <- function() {
-    c("node_modules", "__pycache__", "venv", "build", "dist", "renv")
+    unique(c(default_exclude(), "__pycache__", "venv", "build", "dist", "renv"))
 }
 
 #' File extensions per supported language
@@ -169,16 +177,19 @@ src_extensions <- function() {
 #'
 #' Returns a data.frame(file, lang) of project-relative paths. Hidden
 #' directories are skipped by list.files(); excluded directory basenames
-#' are dropped from any depth of the relative path.
+#' and *.Rcheck directories are dropped from any depth of the relative
+#' path.
 #' @noRd
 find_src_files <- function(project_dir, langs, exclude) {
     exts <- unlist(src_extensions()[langs], use.names = FALSE)
     pattern <- paste0("\\.(", paste(exts, collapse = "|"), ")$")
     rel <- list.files(project_dir, pattern = pattern, recursive = TRUE)
 
-    if (length(exclude) > 0L && length(rel) > 0L) {
+    if (length(rel) > 0L) {
         parts <- strsplit(dirname(rel), "/", fixed = TRUE)
-        dropped <- vapply(parts, function(p) any(p %in% exclude), logical(1))
+        dropped <- vapply(parts, function(p) {
+            any(p %in% exclude | endsWith(p, ".Rcheck"))
+        }, logical(1))
         rel <- rel[!dropped]
     }
 
