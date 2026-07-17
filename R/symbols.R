@@ -1,7 +1,6 @@
 #' @title Code intelligence: AST symbol index
 #' @description Parse R source files into structured function definitions and
 #'   call relationships.
-#' @importFrom utils getParseData
 
 #' Build a symbol index for a project
 #'
@@ -26,6 +25,7 @@
 #' idx <- symbols(d, cache_dir = tempdir())
 #' idx$defs   # function definitions
 #' idx$calls  # call relationships (double calls add)
+#' @importFrom utils getParseData
 #' @export
 symbols <- function(project_dir,
                     cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
