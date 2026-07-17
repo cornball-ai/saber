@@ -9,3 +9,4 @@ misc/
 *.Rproj
 .claude/
 CLAUDE.md
+*.Rcheck/

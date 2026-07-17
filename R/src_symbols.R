@@ -1,35 +1,45 @@
-#' @title Code intelligence: C/C++ symbol index
-#' @description Parse a package's src/ C and C++ sources into function
-#'   definitions and call relationships via tree-sitter.
+#' @title Code intelligence: multi-language symbol index
+#' @description Parse C, C++, and Python sources into function definitions
+#'   and call relationships via tree-sitter.
 
-#' Build a symbol index for a project's src/ directory
+#' Build a symbol index for a project's C, C++, and Python sources
 #'
-#' Parses top-level \code{src/} C and C++ files (\code{.c}, \code{.cc},
-#' \code{.cpp}, \code{.h}, \code{.hpp}) into function definitions and call
-#' relationships, mirroring the shape of \code{\link{symbols}}. Vendored
-#' code in \code{src/} subdirectories is not scanned. Results are cached as
-#' RDS in the user cache directory alongside the \code{symbols()} cache.
+#' Recursively scans \code{project_dir} for C (\code{.c}, \code{.h}), C++
+#' (\code{.cc}, \code{.cpp}, \code{.cxx}, \code{.hh}, \code{.hpp}), and
+#' Python (\code{.py}) sources and parses them into function definitions
+#' and call relationships, mirroring the shape of \code{\link{symbols}}
+#' with an added \code{lang} column. This covers the \code{src/} directory
+#' of an R package as well as repositories that are not R packages at all.
+#' Directories named in \code{exclude} (and hidden directories) are
+#' skipped. Results are cached as RDS in the user cache directory
+#' alongside the \code{symbols()} cache.
 #'
-#' A definition is marked \code{exported} when its name appears in an R
-#' registration table (\code{R_CallMethodDef}, \code{R_CMethodDef},
-#' \code{R_FortranMethodDef}, \code{R_ExternalMethodDef}), meaning it is
-#' reachable from R via \code{.Call()} and friends.
+#' A definition is marked \code{exported} when it is visible beyond its own
+#' file or module: for C/C++, definitions not declared \code{static}; for
+#' Python, names without a leading underscore.
 #'
-#' Parsing uses the suggested \pkg{bonsaisitter} tree-sitter runtime with the
-#' \pkg{treesitter.cpp} grammar package; both must be installed. Projects
-#' without a \code{src/} directory return empty indices without requiring
-#' either package.
+#' Parsing uses the suggested \pkg{bonsaisitter} tree-sitter runtime with
+#' one grammar package per language: \pkg{treesitter.c} for C (falling back
+#' to \pkg{treesitter.cpp}, which also parses C), \pkg{treesitter.cpp} for
+#' C++, and \pkg{treesitter.python} for Python. Grammars are only required
+#' for languages that actually match files, and projects with no matching
+#' files return empty indices without requiring any of them.
 #'
 #' @param project_dir Path to the project directory.
+#' @param langs Character vector of languages to index. Any of \code{"c"},
+#'   \code{"cpp"}, \code{"python"} (all three by default).
+#' @param exclude Character vector of directory basenames to skip while
+#'   scanning, e.g. vendored or generated trees.
 #' @param cache_dir Directory for symbol cache files.
 #' @return A list with components:
 #'   \describe{
-#'     \item{defs}{data.frame(name, file, line, exported)}
-#'     \item{calls}{data.frame(caller, callee, file, line)}
+#'     \item{defs}{data.frame(name, file, line, lang, exported)}
+#'     \item{calls}{data.frame(caller, callee, file, line, lang)}
 #'   }
 #' @examples
-#' if (requireNamespace("bonsaisitter", quietly = TRUE) &&
-#'     requireNamespace("treesitter.cpp", quietly = TRUE)) {
+#' # Needs the bonsaisitter runtime; also needs a grammar package per
+#' # language, tolerated via tryCatch() so the example survives its absence
+#' if (requireNamespace("bonsaisitter", quietly = TRUE)) {
 #'
 #'     # Create a minimal project with a src/ directory
 #'     d <- file.path(tempdir(), "srcdemo")
@@ -39,39 +49,46 @@
 #'         "double area(double r) { return 3.14159 * square(r); }"
 #'     ), file.path(d, "src", "area.c"))
 #'
-#'     idx <- src_symbols(d, cache_dir = tempdir())
+#'     idx <- tryCatch(src_symbols(d, cache_dir = tempdir()),
+#'                     error = function(e) NULL)
 #'     idx$defs   # C function definitions
 #'     idx$calls  # call relationships (area calls square)
 #' }
 #' @export
-src_symbols <- function(project_dir,
+src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
+                        exclude = default_src_exclude(),
                         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
     project_dir <- normalizePath(project_dir, mustWork = TRUE)
     project_name <- basename(project_dir)
 
+    bad <- setdiff(langs, names(src_extensions()))
+    if (length(bad) > 0L) {
+        stop("invalid 'langs' value(s): ", paste(bad, collapse = ", "),
+             ". Allowed: ", paste(names(src_extensions()), collapse = ", "))
+    }
+
     empty <- list(defs = data.frame(name = character(), file = character(),
-                                    line = integer(), exported = logical(),
+                                    line = integer(), lang = character(),
+                                    exported = logical(),
                                     stringsAsFactors = FALSE),
                   calls = data.frame(caller = character(), callee = character(),
                                      file = character(), line = integer(),
+                                     lang = character(),
                                      stringsAsFactors = FALSE))
 
-    src_dir <- file.path(project_dir, "src")
-    if (!dir.exists(src_dir)) {
-        return(empty)
-    }
-    src_files <- list.files(src_dir, pattern = "\\.(c|cc|cpp|h|hpp)$",
-                            full.names = TRUE)
-    if (length(src_files) == 0L) {
+    src_files <- find_src_files(project_dir, langs, exclude)
+    if (nrow(src_files) == 0L) {
         return(empty)
     }
 
-    # Check cache (".src.rds" suffix keeps it apart from the symbols() cache)
+    # Check cache (".src.rds" suffix keeps it apart from the symbols() cache;
+    # the file set already reflects langs and exclude)
     dir.create(cache_dir, recursive = TRUE, showWarnings = FALSE)
     cache_file <- file.path(cache_dir, paste0(project_name, ".src.rds"))
 
-    hashes <- vapply(src_files, file_hash, character(1))
-    hash_key <- paste(sort(paste(basename(src_files), hashes)), collapse = "|")
+    paths <- file.path(project_dir, src_files$file)
+    hashes <- vapply(paths, file_hash, character(1))
+    hash_key <- paste(sort(paste(src_files$file, hashes)), collapse = "|")
 
     if (file.exists(cache_file)) {
         cached <- readRDS(cache_file)
@@ -80,54 +97,125 @@ src_symbols <- function(project_dir,
         }
     }
 
-    ts_parser <- cpp_parser()
+    parsers <- list()
+    defs_acc <- list(rbind_def_rows(list()))
+    calls_acc <- list(empty$calls)
 
-    all_defs <- empty$defs
-    all_defs$start_byte <- double()
-    all_defs$end_byte <- double()
-    all_calls <- empty$calls
-    registered <- character()
-
-    for (fp in src_files) {
-        pd <- parse_src_file(ts_parser, fp)
+    for (i in seq_len(nrow(src_files))) {
+        lang <- src_files$lang[i]
+        if (is.null(parsers[[lang]])) {
+            parsers[[lang]] <- src_parser(lang)
+        }
+        pd <- parse_src_file(parsers[[lang]], file.path(project_dir, src_files$file[i]))
         if (is.null(pd) || nrow(pd) == 0L) {
             next
         }
-        rel_file <- basename(fp)
-        file_defs <- extract_src_defs(pd, rel_file)
-        all_defs <- rbind(all_defs, file_defs)
-        all_calls <- rbind(all_calls, extract_src_calls(pd, rel_file, file_defs))
-        registered <- c(registered, registration_names(pd))
+        rel_file <- src_files$file[i]
+        if (lang == "python") {
+            file_defs <- extract_py_defs(pd, rel_file)
+            file_calls <- extract_src_calls(pd, rel_file, file_defs,
+                call_type = "call",
+                callee_types = c("identifier", "attribute"),
+                lang = lang)
+        } else {
+            file_defs <- extract_c_defs(pd, rel_file, lang)
+            file_calls <- extract_src_calls(pd, rel_file, file_defs,
+                call_type = "call_expression",
+                callee_types = c("identifier",
+                                 "field_expression",
+                                 "qualified_identifier",
+                                 "template_function"),
+                lang = lang)
+        }
+        defs_acc[[length(defs_acc) + 1L]] <- file_defs
+        calls_acc[[length(calls_acc) + 1L]] <- file_calls
     }
 
-    # Registration tables usually live in init.c while the functions they
-    # register are defined elsewhere, so mark exports project-wide
-    all_defs$exported <- all_defs$name %in% registered
-    all_defs <- all_defs[, c("name", "file", "line", "exported"), drop = FALSE]
+    all_defs <- do.call(rbind, defs_acc)
+    all_defs <- all_defs[, c("name", "file", "line", "lang", "exported"), drop = FALSE]
     rownames(all_defs) <- NULL
 
-    result <- list(defs = all_defs, calls = all_calls)
+    result <- list(defs = all_defs, calls = do.call(rbind, calls_acc))
 
     saveRDS(list(hash_key = hash_key, result = result), cache_file)
 
     result
 }
 
-#' Create a tree-sitter C/C++ parser, or fail with install guidance
-#' @noRd
-cpp_parser <- function() {
-    for (pkg in c("bonsaisitter", "treesitter.cpp")) {
-        if (!requireNamespace(pkg, quietly = TRUE)) {
-            stop("src_symbols() requires the '", pkg,
-                 "' package to parse C/C++ sources. Install it first.",
-                 call. = FALSE)
-        }
-    }
-    lang <- getExportedValue("treesitter.cpp", "language")()
-    bonsaisitter::parser(lang)
+#' Default directories to exclude when scanning for source files
+#'
+#' Returns a character vector of directory basenames that
+#' \code{\link{src_symbols}} skips while scanning: dependency and build
+#' trees whose sources are not the project's own. Hidden directories
+#' (e.g. \code{.git}) are always skipped. Extend it for vendored code,
+#' e.g. \code{c(default_src_exclude(), "tree-sitter")}.
+#'
+#' @return Character vector of directory basenames.
+#' @examples
+#' default_src_exclude()
+#' @export
+default_src_exclude <- function() {
+    c("node_modules", "__pycache__", "venv", "build", "dist", "renv")
 }
 
-#' Parse one C/C++ file into a flat node data.frame
+#' File extensions per supported language
+#' @noRd
+src_extensions <- function() {
+    list(c = c("c", "h"), cpp = c("cc", "cpp", "cxx", "hh", "hpp"),
+         python = "py")
+}
+
+#' Find source files under a project, tagged with their language
+#'
+#' Returns a data.frame(file, lang) of project-relative paths. Hidden
+#' directories are skipped by list.files(); excluded directory basenames
+#' are dropped from any depth of the relative path.
+#' @noRd
+find_src_files <- function(project_dir, langs, exclude) {
+    exts <- unlist(src_extensions()[langs], use.names = FALSE)
+    pattern <- paste0("\\.(", paste(exts, collapse = "|"), ")$")
+    rel <- list.files(project_dir, pattern = pattern, recursive = TRUE)
+
+    if (length(exclude) > 0L && length(rel) > 0L) {
+        parts <- strsplit(dirname(rel), "/", fixed = TRUE)
+        dropped <- vapply(parts, function(p) any(p %in% exclude), logical(1))
+        rel <- rel[!dropped]
+    }
+
+    ext <- tolower(sub(".*\\.", "", rel))
+    lang_by_ext <- rep(names(src_extensions()), lengths(src_extensions()))
+    names(lang_by_ext) <- unlist(src_extensions(), use.names = FALSE)
+
+    data.frame(file = rel, lang = unname(lang_by_ext[ext]),
+               stringsAsFactors = FALSE)
+}
+
+#' Create a tree-sitter parser for a language, or fail with install guidance
+#'
+#' C prefers the treesitter.c grammar and falls back to treesitter.cpp,
+#' which parses C with the same node types.
+#' @noRd
+src_parser <- function(lang) {
+    if (!requireNamespace("bonsaisitter", quietly = TRUE)) {
+        stop("src_symbols() requires the 'bonsaisitter' package. ",
+             "Install it first.", call. = FALSE)
+    }
+    grammar_pkgs <- switch(lang,
+                           c = c("treesitter.c", "treesitter.cpp"),
+                           cpp = "treesitter.cpp",
+                           python = "treesitter.python")
+    for (pkg in grammar_pkgs) {
+        if (requireNamespace(pkg, quietly = TRUE)) {
+            grammar <- getExportedValue(pkg, "language")()
+            return(bonsaisitter::parser(grammar))
+        }
+    }
+    stop("src_symbols() requires the '", grammar_pkgs[length(grammar_pkgs)],
+         "' package to parse ", lang, " sources. Install it first.",
+         call. = FALSE)
+}
+
+#' Parse one source file into a flat node data.frame
 #' @noRd
 parse_src_file <- function(ts_parser, filepath) {
     text <- paste(readLines(filepath, warn = FALSE), collapse = "\n")
@@ -139,43 +227,39 @@ parse_src_file <- function(ts_parser, filepath) {
     as.data.frame(bonsaisitter::tree_root_node(tree))
 }
 
-#' Extract function definitions from a flat C/C++ node frame
+#' Extract C/C++ function definitions from a flat node frame
 #'
-#' Returns defs with start_byte/end_byte kept for caller attribution;
-#' src_symbols() strips them before returning.
+#' Keeps start_byte/end_byte for caller attribution; src_symbols() strips
+#' them before returning. exported = not declared static.
 #' @noRd
-extract_src_defs <- function(pd, file) {
-    defs <- data.frame(name = character(), file = character(),
-                       line = integer(), exported = logical(),
-                       start_byte = double(), end_byte = double(),
-                       stringsAsFactors = FALSE)
-
+extract_c_defs <- function(pd, file, lang) {
     fdefs <- pd[pd$type == "function_definition",, drop = FALSE]
+    rows <- vector("list", nrow(fdefs))
     for (i in seq_len(nrow(fdefs))) {
         fd <- fdefs[i,]
-        fn_name <- src_def_name(pd, fd)
-        if (is.null(fn_name)) {
+        info <- c_def_info(pd, fd)
+        if (is.null(info)) {
             next
         }
-        defs <- rbind(defs,
-                      data.frame(name = fn_name, file = file,
-                                 line = fd$start_row + 1L, exported = FALSE,
-                                 start_byte = fd$start_byte,
-                                 end_byte = fd$end_byte,
-                                 stringsAsFactors = FALSE))
+        rows[[i]] <- data.frame(name = info$name, file = file,
+                                line = fd$start_row + 1L, lang = lang,
+                                exported = info$exported,
+                                start_byte = fd$start_byte,
+                                end_byte = fd$end_byte,
+                                stringsAsFactors = FALSE)
     }
-
-    defs
+    rbind_def_rows(rows)
 }
 
-#' Name of a function_definition node
+#' Name and linkage of a C/C++ function_definition node
 #'
 #' The definition's own declarator is the earliest function_declarator in
 #' its range; the name is the widest identifier-like node at the
 #' declarator's start (widest so that C++ qualified names win over their
-#' identifier parts).
+#' identifier parts). A "static" storage class before the declarator makes
+#' the definition file-local.
 #' @noRd
-src_def_name <- function(pd, fd) {
+c_def_info <- function(pd, fd) {
     inside <- pd$start_byte >= fd$start_byte & pd$end_byte <= fd$end_byte
     decls <- pd[inside & pd$type == "function_declarator",, drop = FALSE]
     if (nrow(decls) == 0L) {
@@ -190,23 +274,65 @@ src_def_name <- function(pd, fd) {
     if (nrow(cand) == 0L) {
         return(NULL)
     }
-    cand$text[which.max(cand$end_byte)]
+
+    is_static <- any(pd$type == "storage_class_specifier" &
+                     pd$text == "static" & pd$start_byte >= fd$start_byte &
+                     pd$start_byte < decl$start_byte)
+
+    list(name = cand$text[which.max(cand$end_byte)], exported = !is_static)
 }
 
-#' Extract function calls from a flat C/C++ node frame
+#' Extract Python function and class definitions from a flat node frame
 #'
-#' The callee of a call_expression is the widest identifier-like node
-#' sharing its start byte (e.g. "square", "obj->method", "ns::fn"). Calls
-#' through unnamed expressions (function pointers) are skipped.
+#' The name is the first identifier inside the definition: it directly
+#' follows the "def"/"class" keyword, before parameters, bases, or body.
+#' exported = no leading underscore.
 #' @noRd
-extract_src_calls <- function(pd, file, defs) {
-    calls <- data.frame(caller = character(), callee = character(),
-                        file = character(), line = integer(),
-                        stringsAsFactors = FALSE)
+extract_py_defs <- function(pd, file) {
+    fdefs <- pd[pd$type %in% c("function_definition", "class_definition"),,
+        drop = FALSE]
+    rows <- vector("list", nrow(fdefs))
+    for (i in seq_len(nrow(fdefs))) {
+        fd <- fdefs[i,]
+        ids <- pd[pd$type == "identifier" & pd$start_byte >= fd$start_byte &
+            pd$end_byte <= fd$end_byte,, drop = FALSE]
+        if (nrow(ids) == 0L) {
+            next
+        }
+        fn_name <- ids$text[which.min(ids$start_byte)]
+        rows[[i]] <- data.frame(name = fn_name, file = file,
+                                line = fd$start_row + 1L, lang = "python",
+                                exported = !startsWith(fn_name, "_"),
+                                start_byte = fd$start_byte,
+                                end_byte = fd$end_byte,
+                                stringsAsFactors = FALSE)
+    }
+    rbind_def_rows(rows)
+}
 
-    callee_types <- c("identifier", "field_expression", "qualified_identifier",
-                      "template_function")
-    ces <- pd[pd$type == "call_expression",, drop = FALSE]
+#' Combine per-definition rows, or an empty defs frame
+#' @noRd
+rbind_def_rows <- function(rows) {
+    rows <- Filter(Negate(is.null), rows)
+    if (length(rows) == 0L) {
+        return(data.frame(name = character(), file = character(),
+                          line = integer(), lang = character(),
+                          exported = logical(), start_byte = double(),
+                          end_byte = double(), stringsAsFactors = FALSE))
+    }
+    do.call(rbind, rows)
+}
+
+#' Extract function calls from a flat node frame
+#'
+#' The callee of a call node is the widest callee-typed node sharing its
+#' start byte (e.g. "square", "obj->method", "self.helper", "ns::fn").
+#' Calls through unnamed expressions (function pointers, lambdas) are
+#' skipped.
+#' @noRd
+extract_src_calls <- function(pd, file, defs, call_type, callee_types, lang) {
+    ces <- pd[pd$type == call_type,, drop = FALSE]
+    rows <- vector("list", nrow(ces))
     for (i in seq_len(nrow(ces))) {
         ce <- ces[i,]
         cand <- pd[pd$start_byte == ce$start_byte & pd$end_byte < ce$end_byte &
@@ -214,18 +340,21 @@ extract_src_calls <- function(pd, file, defs) {
         if (nrow(cand) == 0L) {
             next
         }
-        callee <- cand$text[which.max(cand$end_byte)]
-        caller <- enclosing_src_def(ce$start_byte, defs)
-        calls <- rbind(calls,
-                       data.frame(caller = caller, callee = callee, file = file,
-                                  line = ce$start_row + 1L,
-                                  stringsAsFactors = FALSE))
+        rows[[i]] <- data.frame(caller = enclosing_src_def(ce$start_byte, defs),
+                                callee = cand$text[which.max(cand$end_byte)],
+                                file = file, line = ce$start_row + 1L,
+                                lang = lang, stringsAsFactors = FALSE)
     }
-
-    calls
+    rows <- Filter(Negate(is.null), rows)
+    if (length(rows) == 0L) {
+        return(data.frame(caller = character(), callee = character(),
+                          file = character(), line = integer(),
+                          lang = character(), stringsAsFactors = FALSE))
+    }
+    do.call(rbind, rows)
 }
 
-#' Find which function definition encloses a byte offset
+#' Find which definition encloses a byte offset
 #' @noRd
 enclosing_src_def <- function(byte, defs) {
     if (nrow(defs) == 0L) {
@@ -239,28 +368,4 @@ enclosing_src_def <- function(byte, defs) {
     # If nested, pick the innermost (smallest range)
     inside$span <- inside$end_byte - inside$start_byte
     inside$name[which.min(inside$span)]
-}
-
-#' C functions registered with R (R_CallMethodDef and friends)
-#'
-#' Identifiers inside a registration-table declaration are the registered
-#' C functions (referenced as \code{&fn}). Table array names caught along
-#' the way are harmless: exported status intersects with actual defs.
-#' @noRd
-registration_names <- function(pd) {
-    tables <- pd[pd$type == "declaration" &
-        grepl("R_(Call|C|Fortran|External)MethodDef", pd$text),, drop = FALSE]
-    if (nrow(tables) == 0L) {
-        return(character())
-    }
-
-    found <- character()
-    for (i in seq_len(nrow(tables))) {
-        tb <- tables[i,]
-        ids <- pd[pd$type == "identifier" & pd$start_byte >= tb$start_byte &
-            pd$end_byte <= tb$end_byte,, drop = FALSE]
-        found <- c(found, ids$text)
-    }
-
-    unique(found)
 }

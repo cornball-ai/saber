@@ -30,8 +30,8 @@ saber never writes outside this directory (except briefings, which also return t
 | Function | Purpose |
 |---|---|
 | `symbols(project_dir)` | AST symbol index: function defs and calls via `getParseData()` |
-| `src_symbols(project_dir)` | C/C++ symbol index for `src/` via tree-sitter (optional bonsaisitter + treesitter.cpp) |
-| `blast_radius(fn, project)` | Find all callers of a function across projects; `include = "src"` covers C/C++ |
+| `src_symbols(project_dir)` | C/C++/Python symbol index for any repo via tree-sitter (optional bonsaisitter + grammar packages) |
+| `blast_radius(fn, project)` | Find all callers of a function across projects; `include = "src"` covers C/C++/Python |
 
 ### Project discovery
 
@@ -54,7 +54,7 @@ saber never writes outside this directory (except briefings, which also return t
 ```
 R/
   symbols.R   — symbols(), AST symbol index via getParseData()
-  src_symbols.R — src_symbols(), C/C++ symbol index via bonsaisitter
+  src_symbols.R — src_symbols(), C/C++/Python symbol index via bonsaisitter
   blast.R     — blast_radius(), cross-project caller tracing
   projects.R  — projects(), find_downstream(), project discovery
   briefing.R  — briefing(), project context generation
