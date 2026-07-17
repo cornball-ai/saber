@@ -1,3 +1,12 @@
+# saber 0.7.2.1 (development)
+
+- New `src_symbols()`: C/C++ symbol index for a project's `src/` directory via
+  tree-sitter (suggested `bonsaisitter` runtime + `treesitter.cpp` grammar).
+  Mirrors `symbols()`; `exported` marks functions registered with R
+  (`R_CallMethodDef` and friends).
+- `blast_radius()` gains `include = "src"` to report C/C++ callers from the
+  target project's `src/`.
+
 # saber 0.7.2
 
 Consolidates the 0.7.1.x development cycle.
