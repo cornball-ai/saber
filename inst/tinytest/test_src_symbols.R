@@ -23,6 +23,9 @@ has_cpp <- has_bonsai &&
     (requireNamespace("treesitter.c", quietly = TRUE) ||
      requireNamespace("treesitter.cpp", quietly = TRUE))
 has_py <- has_bonsai && requireNamespace("treesitter.python", quietly = TRUE)
+has_rust <- has_bonsai && requireNamespace("treesitter.rust", quietly = TRUE)
+has_js <- has_bonsai &&
+    requireNamespace("treesitter.javascript", quietly = TRUE)
 
 if (has_cpp) {
     d <- file.path(tempdir(), "srcpkg")
@@ -129,6 +132,80 @@ if (has_py) {
 
     # Attribute callees keep their receiver
     expect_true(any(pidx$calls$callee == "self.decode"))
+}
+
+if (has_rust) {
+    dr <- file.path(tempdir(), "rustpkg")
+    dir.create(file.path(dr, "src"), recursive = TRUE, showWarnings = FALSE)
+
+    writeLines(c(
+        "pub struct Point { x: f64 }",
+        "",
+        "fn helper(x: f64) -> f64 {",
+        "    x.abs()",
+        "}",
+        "",
+        "pub fn compute(x: f64) -> f64 {",
+        "    helper(x) * 2.0",
+        "}"
+    ), file.path(dr, "src", "lib.rs"))
+
+    ridx <- src_symbols(dr, cache_dir = tempdir())
+
+    # Functions and structs indexed
+    expect_true(all(c("Point", "helper", "compute") %in% ridx$defs$name))
+    expect_identical(unique(ridx$defs$lang), "rust")
+
+    # exported = declared pub
+    expect_true(ridx$defs$exported[ridx$defs$name == "compute"])
+    expect_true(ridx$defs$exported[ridx$defs$name == "Point"])
+    expect_false(ridx$defs$exported[ridx$defs$name == "helper"])
+
+    # Caller attribution: compute calls helper
+    expect_true(any(ridx$calls$caller == "compute" & ridx$calls$callee == "helper"))
+
+    # Cargo target/ is excluded by default
+    dir.create(file.path(dr, "target"), showWarnings = FALSE)
+    writeLines("pub fn generated() {}", file.path(dr, "target", "gen.rs"))
+    ridx2 <- src_symbols(dr, cache_dir = tempdir())
+    expect_false("generated" %in% ridx2$defs$name)
+}
+
+if (has_js) {
+    dj <- file.path(tempdir(), "jspkg")
+    dir.create(dj, recursive = TRUE, showWarnings = FALSE)
+
+    writeLines(c(
+        "function helper(x) {",
+        "    return x + 1;",
+        "}",
+        "",
+        "export function compute(x) {",
+        "    return helper(x) * 2;",
+        "}",
+        "",
+        "const dbl = (x) => compute(x) + compute(x);",
+        "",
+        "class Model {",
+        "    forward(x) { return this.decode(compute(x)); }",
+        "}"
+    ), file.path(dj, "app.js"))
+
+    jidx <- src_symbols(dj, cache_dir = tempdir())
+
+    # Declarations, arrow-function consts, classes, and methods indexed
+    expect_true(all(c("helper", "compute", "dbl", "Model", "forward") %in%
+        jidx$defs$name))
+    expect_identical(unique(jidx$defs$lang), "javascript")
+
+    # exported = wrapped in an export statement
+    expect_true(jidx$defs$exported[jidx$defs$name == "compute"])
+    expect_false(jidx$defs$exported[jidx$defs$name == "helper"])
+
+    # Caller attribution across def kinds
+    expect_true(any(jidx$calls$caller == "compute" & jidx$calls$callee == "helper"))
+    expect_true(any(jidx$calls$caller == "dbl" & jidx$calls$callee == "compute"))
+    expect_true(any(jidx$calls$caller == "forward" & jidx$calls$callee == "this.decode"))
 }
 
 # include = "src" is accepted by blast_radius validation regardless

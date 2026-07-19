@@ -1,9 +1,9 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{src_symbols}
 \alias{src_symbols}
-\title{Build a symbol index for a project's C, C++, and Python sources}
+\title{Build a symbol index for a project's non-R sources}
 \usage{
-src_symbols(project_dir, langs = c("c", "cpp", "python"),
+src_symbols(project_dir, langs = c("c", "cpp", "python", "rust", "javascript"),
             exclude = default_src_exclude(),
             cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
 }
@@ -11,7 +11,8 @@ src_symbols(project_dir, langs = c("c", "cpp", "python"),
 \item{project_dir}{Path to the project directory.}
 
 \item{langs}{Character vector of languages to index. Any of \code{"c"},
-\code{"cpp"}, \code{"python"} (all three by default).}
+\code{"cpp"}, \code{"python"}, \code{"rust"}, \code{"javascript"}
+(all five by default).}
 
 \item{exclude}{Character vector of directory basenames to skip while
 scanning, e.g. vendored or generated trees. The default
@@ -31,27 +32,31 @@ A list with components:
 }
 \description{
 Recursively scans \code{project_dir} for C (\code{.c}, \code{.h}), C++
-(\code{.cc}, \code{.cpp}, \code{.cxx}, \code{.hh}, \code{.hpp}), and
-Python (\code{.py}) sources and parses them into function definitions
-and call relationships, mirroring the shape of \code{\link{symbols}}
-with an added \code{lang} column. This covers the \code{src/} directory
-of an R package as well as repositories that are not R packages at all.
-Directories named in \code{exclude} are skipped, as are hidden
-directories and \code{*.Rcheck} directories, always. Results are
-cached as RDS in the user cache directory alongside the
+(\code{.cc}, \code{.cpp}, \code{.cxx}, \code{.hh}, \code{.hpp}), Python
+(\code{.py}), Rust (\code{.rs}), and JavaScript (\code{.js},
+\code{.mjs}, \code{.cjs}, \code{.jsx}) sources and parses them into
+function definitions and call relationships, mirroring the shape of
+\code{\link{symbols}} with an added \code{lang} column. This covers the
+\code{src/} directory of an R package as well as repositories that are
+not R packages at all. Directories named in \code{exclude} are skipped,
+as are hidden directories and \code{*.Rcheck} directories, always.
+Results are cached as RDS in the user cache directory alongside the
 \code{symbols()} cache.
 }
 \details{
 A definition is marked \code{exported} when it is visible beyond its own
 file or module: for C/C++, definitions not declared \code{static}; for
-Python, names without a leading underscore.
+Python, names without a leading underscore; for Rust, items declared
+\code{pub}; for JavaScript, definitions wrapped in an \code{export}
+statement.
 
 Parsing uses the suggested \pkg{bonsaisitter} tree-sitter runtime with
 one grammar package per language: \pkg{treesitter.c} for C (falling back
 to \pkg{treesitter.cpp}, which also parses C), \pkg{treesitter.cpp} for
-C++, and \pkg{treesitter.python} for Python. Grammars are only required
-for languages that actually match files, and projects with no matching
-files return empty indices without requiring any of them.
+C++, \pkg{treesitter.python} for Python, \pkg{treesitter.rust} for Rust,
+and \pkg{treesitter.javascript} for JavaScript. Grammars are only
+required for languages that actually match files, and projects with no
+matching files return empty indices without requiring any of them.
 
 }
 \examples{

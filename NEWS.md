@@ -1,16 +1,19 @@
 # saber 0.7.2.1 (development)
 
-- New `src_symbols()`: C, C++, and Python symbol index for any repository via
-  tree-sitter (suggested `bonsaisitter` runtime + a grammar package per
-  language: `treesitter.c`, `treesitter.cpp`, `treesitter.python`). Mirrors
+- New `src_symbols()`: C, C++, Python, Rust, and JavaScript symbol index for
+  any repository via tree-sitter (suggested `bonsaisitter` runtime + a
+  grammar package per language: `treesitter.c`, `treesitter.cpp`,
+  `treesitter.python`, `treesitter.rust`, `treesitter.javascript`). Mirrors
   `symbols()` with a `lang` column; `exported` marks definitions visible
   beyond their own file (non-`static` in C/C++, no leading underscore in
-  Python). New `default_src_exclude()` lists directories skipped while
-  scanning: the `default_exclude()` opt-outs (`Documents` and friends) plus
-  dependency/build trees; hidden and `*.Rcheck` directories are always
+  Python, `pub` in Rust, `export`-wrapped in JavaScript). New
+  `default_src_exclude()` lists directories skipped while scanning: the
+  `default_exclude()` opt-outs (`Documents` and friends) plus
+  dependency/build trees (`node_modules`, `__pycache__`, `venv`, `build`,
+  `dist`, `renv`, `target`); hidden and `*.Rcheck` directories are always
   skipped.
-- `blast_radius()` gains `include = "src"` to report C/C++/Python callers
-  from the target project's sources.
+- `blast_radius()` gains `include = "src"` to report C/C++/Python/Rust/JS
+  callers from the target project's sources.
 
 # saber 0.7.2
 

@@ -1,34 +1,39 @@
 #' @title Code intelligence: multi-language symbol index
-#' @description Parse C, C++, and Python sources into function definitions
-#'   and call relationships via tree-sitter.
+#' @description Parse C, C++, Python, Rust, and JavaScript sources into
+#'   function definitions and call relationships via tree-sitter.
 
-#' Build a symbol index for a project's C, C++, and Python sources
+#' Build a symbol index for a project's non-R sources
 #'
 #' Recursively scans \code{project_dir} for C (\code{.c}, \code{.h}), C++
-#' (\code{.cc}, \code{.cpp}, \code{.cxx}, \code{.hh}, \code{.hpp}), and
-#' Python (\code{.py}) sources and parses them into function definitions
-#' and call relationships, mirroring the shape of \code{\link{symbols}}
-#' with an added \code{lang} column. This covers the \code{src/} directory
-#' of an R package as well as repositories that are not R packages at all.
-#' Directories named in \code{exclude} are skipped, as are hidden
-#' directories and \code{*.Rcheck} directories, always. Results are
-#' cached as RDS in the user cache directory alongside the
+#' (\code{.cc}, \code{.cpp}, \code{.cxx}, \code{.hh}, \code{.hpp}), Python
+#' (\code{.py}), Rust (\code{.rs}), and JavaScript (\code{.js},
+#' \code{.mjs}, \code{.cjs}, \code{.jsx}) sources and parses them into
+#' function definitions and call relationships, mirroring the shape of
+#' \code{\link{symbols}} with an added \code{lang} column. This covers the
+#' \code{src/} directory of an R package as well as repositories that are
+#' not R packages at all. Directories named in \code{exclude} are skipped,
+#' as are hidden directories and \code{*.Rcheck} directories, always.
+#' Results are cached as RDS in the user cache directory alongside the
 #' \code{symbols()} cache.
 #'
 #' A definition is marked \code{exported} when it is visible beyond its own
 #' file or module: for C/C++, definitions not declared \code{static}; for
-#' Python, names without a leading underscore.
+#' Python, names without a leading underscore; for Rust, items declared
+#' \code{pub}; for JavaScript, definitions wrapped in an \code{export}
+#' statement.
 #'
 #' Parsing uses the suggested \pkg{bonsaisitter} tree-sitter runtime with
 #' one grammar package per language: \pkg{treesitter.c} for C (falling back
 #' to \pkg{treesitter.cpp}, which also parses C), \pkg{treesitter.cpp} for
-#' C++, and \pkg{treesitter.python} for Python. Grammars are only required
-#' for languages that actually match files, and projects with no matching
-#' files return empty indices without requiring any of them.
+#' C++, \pkg{treesitter.python} for Python, \pkg{treesitter.rust} for Rust,
+#' and \pkg{treesitter.javascript} for JavaScript. Grammars are only
+#' required for languages that actually match files, and projects with no
+#' matching files return empty indices without requiring any of them.
 #'
 #' @param project_dir Path to the project directory.
 #' @param langs Character vector of languages to index. Any of \code{"c"},
-#'   \code{"cpp"}, \code{"python"} (all three by default).
+#'   \code{"cpp"}, \code{"python"}, \code{"rust"}, \code{"javascript"}
+#'   (all five by default).
 #' @param exclude Character vector of directory basenames to skip while
 #'   scanning, e.g. vendored or generated trees. The default
 #'   \code{\link{default_src_exclude}} includes the
@@ -60,7 +65,8 @@
 #'     idx$calls  # call relationships (area calls square)
 #' }
 #' @export
-src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
+src_symbols <- function(project_dir,
+                        langs = c("c", "cpp", "python", "rust", "javascript"),
                         exclude = default_src_exclude(),
                         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")) {
     project_dir <- normalizePath(project_dir, mustWork = TRUE)
@@ -116,22 +122,16 @@ src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
             next
         }
         rel_file <- src_files$file[i]
-        if (lang == "python") {
-            file_defs <- extract_py_defs(pd, rel_file)
-            file_calls <- extract_src_calls(pd, rel_file, file_defs,
-                call_type = "call",
-                callee_types = c("identifier", "attribute"),
-                lang = lang)
-        } else {
-            file_defs <- extract_c_defs(pd, rel_file, lang)
-            file_calls <- extract_src_calls(pd, rel_file, file_defs,
-                call_type = "call_expression",
-                callee_types = c("identifier",
-                                 "field_expression",
-                                 "qualified_identifier",
-                                 "template_function"),
-                lang = lang)
-        }
+        file_defs <- switch(lang,
+                            python = extract_py_defs(pd, rel_file),
+                            rust = extract_rust_defs(pd, rel_file),
+                            javascript = extract_js_defs(pd, rel_file),
+                            extract_c_defs(pd, rel_file, lang))
+        spec <- src_call_spec(lang)
+        file_calls <- extract_src_calls(pd, rel_file, file_defs,
+                                        call_type = spec$type,
+                                        callee_types = spec$callees,
+                                        lang = lang)
         defs_acc[[length(defs_acc) + 1L]] <- file_defs
         calls_acc[[length(calls_acc) + 1L]] <- file_calls
     }
@@ -153,7 +153,8 @@ src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
 #' \code{\link{src_symbols}} skips while scanning: everything in
 #' \code{\link{default_exclude}} (user directories such as
 #' \code{Documents}, plus caches and build artifacts), extended with
-#' dependency and build trees whose sources are not the project's own.
+#' dependency and build trees whose sources are not the project's own
+#' (including cargo's \code{target}).
 #' Hidden directories (e.g. \code{.git}) and \code{*.Rcheck} directories
 #' are always skipped, whatever the \code{exclude} value. Extend it for
 #' vendored code, e.g. \code{c(default_src_exclude(), "tree-sitter")}.
@@ -163,14 +164,33 @@ src_symbols <- function(project_dir, langs = c("c", "cpp", "python"),
 #' default_src_exclude()
 #' @export
 default_src_exclude <- function() {
-    unique(c(default_exclude(), "__pycache__", "venv", "build", "dist", "renv"))
+    unique(c(default_exclude(), "__pycache__", "venv", "build", "dist",
+             "renv", "target"))
 }
 
 #' File extensions per supported language
 #' @noRd
 src_extensions <- function() {
     list(c = c("c", "h"), cpp = c("cc", "cpp", "cxx", "hh", "hpp"),
-         python = "py")
+         python = "py", rust = "rs",
+         javascript = c("js", "mjs", "cjs", "jsx"))
+}
+
+#' Call node type and callee node types per language
+#'
+#' The callee types are the named nodes that can carry a call's name:
+#' plain identifiers plus each language's member/path access form.
+#' @noRd
+src_call_spec <- function(lang) {
+    switch(lang,
+           python = list(type = "call", callees = c("identifier", "attribute")),
+           rust = list(type = "call_expression",
+                       callees = c("identifier", "field_expression", "scoped_identifier")),
+           javascript = list(type = "call_expression",
+                             callees = c("identifier", "member_expression")),
+           list(type = "call_expression",
+                callees = c("identifier", "field_expression",
+                            "qualified_identifier", "template_function")))
 }
 
 #' Find source files under a project, tagged with their language
@@ -214,7 +234,9 @@ src_parser <- function(lang) {
     grammar_pkgs <- switch(lang,
                            c = c("treesitter.c", "treesitter.cpp"),
                            cpp = "treesitter.cpp",
-                           python = "treesitter.python")
+                           python = "treesitter.python",
+                           rust = "treesitter.rust",
+                           javascript = "treesitter.javascript")
     for (pkg in grammar_pkgs) {
         if (requireNamespace(pkg, quietly = TRUE)) {
             grammar <- getExportedValue(pkg, "language")()
@@ -314,6 +336,84 @@ extract_py_defs <- function(pd, file) {
         rows[[i]] <- data.frame(name = fn_name, file = file,
                                 line = fd$start_row + 1L, lang = "python",
                                 exported = !startsWith(fn_name, "_"),
+                                start_byte = fd$start_byte,
+                                end_byte = fd$end_byte,
+                                stringsAsFactors = FALSE)
+    }
+    rbind_def_rows(rows)
+}
+
+#' Extract Rust item definitions from a flat node frame
+#'
+#' Indexes functions, structs, enums, and traits. The name is the first
+#' identifier-like node inside the item: it directly follows the item
+#' keyword, before generics, parameters, or body. exported = declared
+#' with a visibility modifier (pub), which starts the item when present.
+#' @noRd
+extract_rust_defs <- function(pd, file) {
+    def_types <- c("function_item", "struct_item", "enum_item", "trait_item")
+    fdefs <- pd[pd$type %in% def_types,, drop = FALSE]
+    rows <- vector("list", nrow(fdefs))
+    for (i in seq_len(nrow(fdefs))) {
+        fd <- fdefs[i,]
+        ids <- pd[pd$type %in% c("identifier", "type_identifier") &
+            pd$start_byte >= fd$start_byte & pd$end_byte <= fd$end_byte,,
+            drop = FALSE]
+        if (nrow(ids) == 0L) {
+            next
+        }
+        is_pub <- any(pd$type == "visibility_modifier" &
+                      pd$start_byte == fd$start_byte)
+        rows[[i]] <- data.frame(name = ids$text[which.min(ids$start_byte)],
+                                file = file, line = fd$start_row + 1L,
+                                lang = "rust", exported = is_pub,
+                                start_byte = fd$start_byte,
+                                end_byte = fd$end_byte,
+                                stringsAsFactors = FALSE)
+    }
+    rbind_def_rows(rows)
+}
+
+#' Extract JavaScript definitions from a flat node frame
+#'
+#' Indexes function and class declarations, methods, and variables bound
+#' to arrow functions or function expressions (the value node ends where
+#' the declarator ends). The name is the first identifier-like node inside
+#' the definition. exported = wrapped in an ES module export statement;
+#' CommonJS module.exports assignments are not detected.
+#' @noRd
+extract_js_defs <- function(pd, file) {
+    def_types <- c("function_declaration", "generator_function_declaration",
+                   "class_declaration", "method_definition")
+    fdefs <- pd[pd$type %in% def_types,, drop = FALSE]
+
+    vds <- pd[pd$type == "variable_declarator",, drop = FALSE]
+    fn_vals <- pd[pd$type %in% c("arrow_function", "function_expression"),,
+        drop = FALSE]
+    if (nrow(vds) > 0L && nrow(fn_vals) > 0L) {
+        fn_valued <- vapply(seq_len(nrow(vds)), function(i) {
+            any(fn_vals$start_byte > vds$start_byte[i] &
+                fn_vals$end_byte == vds$end_byte[i])
+        }, logical(1))
+        fdefs <- rbind(fdefs, vds[fn_valued,, drop = FALSE])
+    }
+
+    exports <- pd[pd$type == "export_statement",, drop = FALSE]
+
+    rows <- vector("list", nrow(fdefs))
+    for (i in seq_len(nrow(fdefs))) {
+        fd <- fdefs[i,]
+        ids <- pd[pd$type %in% c("identifier", "property_identifier") &
+            pd$start_byte >= fd$start_byte & pd$end_byte <= fd$end_byte,,
+            drop = FALSE]
+        if (nrow(ids) == 0L) {
+            next
+        }
+        is_exported <- any(exports$start_byte <= fd$start_byte &
+                           exports$end_byte >= fd$end_byte)
+        rows[[i]] <- data.frame(name = ids$text[which.min(ids$start_byte)],
+                                file = file, line = fd$start_row + 1L,
+                                lang = "javascript", exported = is_exported,
                                 start_byte = fd$start_byte,
                                 end_byte = fd$end_byte,
                                 stringsAsFactors = FALSE)
