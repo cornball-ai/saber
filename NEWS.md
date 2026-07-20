@@ -1,3 +1,10 @@
+# saber 0.7.2.1 (development)
+
+- New `heartbeat()`: cross-project git activity summary. Scans every
+  repository under `scan_dir`, reports projects with commits in the lookback
+  window (busiest first), and writes `briefs/_heartbeat.md`. The one-glance
+  complement to `briefing()`.
+
 # saber 0.7.2
 
 Consolidates the 0.7.1.x development cycle.
