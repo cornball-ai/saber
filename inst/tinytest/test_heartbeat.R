@@ -41,3 +41,29 @@ if (git_ok) {
                                         briefs_dir = briefs))
     expect_true(grepl("No commits in the window", text2, fixed = TRUE))
 }
+
+# Exported git helpers: count and log primitives behind heartbeat()
+if (git_ok) {
+    expect_identical(git_commit_count_since(active, Sys.Date() - 7), 1L)
+    expect_identical(git_commit_count_since(file.path(root, "plaindir"),
+                                            Sys.Date() - 7), 0L)
+
+    log1 <- git_log_since(active, Sys.Date() - 7)
+    expect_identical(length(log1), 1L)
+    expect_true(grepl("add a", log1, fixed = TRUE))
+
+    # NULL since_date means unbounded
+    expect_identical(git_log_since(active, NULL), log1)
+
+    # iso format: tab-separated ISO timestamp, short hash, subject
+    iso <- git_log_since(active, format = "iso")
+    expect_identical(length(iso), 1L)
+    parts <- strsplit(iso, "\t", fixed = TRUE)[[1L]]
+    expect_identical(length(parts), 3L)
+    expect_true(grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2} ", parts[1L]))
+    expect_identical(parts[3L], "add a")
+
+    # Non-repos and empty repos return empty logs
+    expect_identical(git_log_since(file.path(root, "plaindir")), character(0))
+    expect_identical(git_log_since(quiet), character(0))
+}
