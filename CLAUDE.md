@@ -38,6 +38,7 @@ saber never writes outside this directory (except briefings, which also return t
 | `projects(scan_dir)` | Discover R package projects and their metadata |
 | `find_downstream(package)` | Find all projects that depend on a given package |
 | `briefing(project)` | Generate project context briefing (metadata, dependents, memory, git log) |
+| `heartbeat(days)` | Cross-project git activity summary, busiest first |
 
 ### Package introspection
 
@@ -55,6 +56,7 @@ R/
   blast.R     — blast_radius(), cross-project caller tracing
   projects.R  — projects(), find_downstream(), project discovery
   briefing.R  — briefing(), project context generation
+  heartbeat.R — heartbeat(), cross-project git activity summary
   pkg.R       — pkg_exports(), pkg_internals(), pkg_help()
   utils.R     — file_hash(), default_exclude()
 inst/
