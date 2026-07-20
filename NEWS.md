@@ -14,6 +14,10 @@
   skipped.
 - `blast_radius()` gains `include = "src"` to report C/C++/Python/Rust/JS
   callers from the target project's sources.
+- New `heartbeat()`: cross-project git activity summary. Scans every
+  repository under `scan_dir`, reports projects with commits in the lookback
+  window (busiest first), and writes `briefs/_heartbeat.md`. The one-glance
+  complement to `briefing()`.
 
 # saber 0.7.2
 
