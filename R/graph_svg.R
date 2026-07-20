@@ -158,4 +158,3 @@ xml_escape <- function(s) {
     s <- gsub('"', "&quot;", s, fixed = TRUE)
     s
 }
-

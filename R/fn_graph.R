@@ -66,4 +66,3 @@ fn_graph <- function(project_dir, include_external = FALSE, ...,
 
     graph_svg(edges, nodes, ...)
 }
-

@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{blast_radius}
 \alias{blast_radius}
-\title{Blast radius analysis}
+\title{Find callers of a function across projects}
 \usage{
 blast_radius(fn, project = NULL, include = "r", scan_dir = path.expand("~"),
              cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
@@ -29,17 +29,16 @@ A data.frame with columns: caller, project, file, line, source.
   \code{source} is one of \code{"r"}, \code{"example"}, \code{"vignette"}.
 }
 \description{
-Find all callers of a function across projects.
-Find callers of a function across projects
-
 Given a function name and project, finds all internal callers within that
 project and all callers in downstream projects (projects whose DESCRIPTION
 lists this one in Depends, Imports, or LinkingTo).
-
+}
+\details{
 With \code{include = c("r", "examples", "vignettes")} the search can be
 extended to references in the target project's roxygen \verb{@examples}
 blocks and vignette code chunks (Rmd, qmd, Rnw). Documentation scanning is
 target-project only; it does not walk downstream projects' docs.
+
 }
 \examples{
 # Create a minimal project

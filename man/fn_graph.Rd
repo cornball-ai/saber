@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{fn_graph}
 \alias{fn_graph}
-\title{Code intelligence: function call graph}
+\title{Render a function call graph for an R project}
 \usage{
 fn_graph(project_dir, include_external = FALSE, ...,
          cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
@@ -24,10 +24,6 @@ Name-only argument — must be passed by name.}
 Character vector of SVG lines. Write with \code{writeLines()}.
 }
 \description{
-Render a project's internal function call graph as interactive
-  SVG.
-Render a function call graph for an R project
-
 Pulls the AST symbol index via \code{\link{symbols}} and renders
 internal function-to-function call edges as SVG. External calls
 (into other packages) are dropped by default.

@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{agent_context}
 \alias{agent_context}
-\title{Agent context assembly}
+\title{Load context files for an AI coding agent}
 \usage{
 agent_context(agent = NULL, project_dir = getwd(), workspace_dir = NULL,
               memory_base = file.path(path.expand("~"), ".claude", "projects"),
@@ -44,34 +44,32 @@ Character string of assembled context, or empty string if no
   context applies.
 }
 \description{
-Assemble context from memory, instructions, and identity files
-  for AI coding agents.
-Load context files for an AI coding agent
-
 Returns assembled context (memory, project/global instructions, agent
 identity files) tailored to a specific consumer. Files autoloaded by the
 agent natively are skipped to avoid duplication.
-
+}
+\details{
 Defaults per agent:
 \itemize{
-  \item \code{"claude"} - skips Claude Code project memory and CLAUDE.md
-    files (autoloaded by 'Claude Code'). Loads Codex memories, AGENTS.md,
-    USER.md, and SOUL.md when present.
-  \item \code{"codex"} - skips AGENTS.md and Codex memories (autoloaded by
-    Codex). Loads Claude Code project memory, CLAUDE.md, USER.md, and
-    SOUL.md when present.
-  \item \code{"corteza"} or \code{NULL} - loads everything available.
+\item \code{"claude"} - skips Claude Code project memory and CLAUDE.md
+files (autoloaded by 'Claude Code'). Loads Codex memories, AGENTS.md,
+USER.md, and SOUL.md when present.
+\item \code{"codex"} - skips AGENTS.md and Codex memories (autoloaded by
+Codex). Loads Claude Code project memory, CLAUDE.md, USER.md, and
+SOUL.md when present.
+\item \code{"corteza"} or \code{NULL} - loads everything available.
 }
 
 Project and global instructions are resolved by trying both naming
 conventions and picking the file relevant to the consumer:
 \itemize{
-  \item Project: \code{CLAUDE.md} or \code{AGENTS.md}
-  \item Global: \code{~/.claude/CLAUDE.md} or
-    \code{<workspace_dir>/USER.md}
+\item Project: \code{CLAUDE.md} or \code{AGENTS.md}
+\item Global: \code{~/.claude/CLAUDE.md} or
+\code{<workspace_dir>/USER.md}
 }
 
 Override the defaults with the \code{include_*} parameters.
+
 }
 \examples{
 \donttest{
