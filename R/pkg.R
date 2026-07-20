@@ -444,4 +444,3 @@ rd_get_aliases <- function(rd) {
     }
     trimws(aliases)
 }
-

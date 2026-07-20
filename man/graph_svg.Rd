@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{graph_svg}
 \alias{graph_svg}
-\title{Force-directed graph rendering}
+\title{Render a graph as static SVG}
 \usage{
 graph_svg(edges, nodes = NULL, width = 1200L, height = 900L, iterations = 50L,
           seed = 1L)
@@ -31,19 +31,17 @@ Character vector, one SVG element per line. Write with
   \code{writeLines()}.
 }
 \description{
-Render a graph as static, interactive SVG using a base R
-  Fruchterman-Reingold force simulation.
-Render a graph as static SVG
-
 Runs a Fruchterman-Reingold force simulation to lay out nodes, then
 emits SVG with baked coordinates. Output is interactive via native
 browser features: hover tooltips from \code{<title>} elements, click
 navigation from \code{<a xlink:href>} wrappers, CSS \code{:hover}
 highlighting. No JavaScript.
-
+}
+\details{
 Suitable for graphs up to roughly a few hundred nodes. The repulsion
 step is vectorized via \code{outer()} but allocates an
 \code{n x n} matrix per iteration; larger graphs should pre-filter.
+
 }
 \examples{
 edges <- data.frame(from = c("a", "a", "b"),

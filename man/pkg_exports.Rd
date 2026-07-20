@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{pkg_exports}
 \alias{pkg_exports}
-\title{Package introspection}
+\title{List exported functions of a package}
 \usage{
 pkg_exports(package, pattern = NULL)
 }
@@ -14,10 +14,6 @@ pkg_exports(package, pattern = NULL)
 A data.frame with columns: name, args.
 }
 \description{
-Query installed R packages for exported functions, internal
-  functions, and help documentation.
-List exported functions of a package
-
 Returns a data.frame of exported functions with their argument signatures.
 }
 \examples{

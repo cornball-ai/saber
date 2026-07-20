@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{projects}
 \alias{projects}
-\title{Project discovery}
+\title{Discover R package projects}
 \usage{
 projects(scan_dir = path.expand("~"), exclude = default_exclude())
 }
@@ -15,10 +15,6 @@ A data.frame with columns: package, title, version, path, depends,
   imports.
 }
 \description{
-Discover R package projects and map their dependency
-  relationships.
-Discover R package projects
-
 Scans a directory for subdirectories containing a DESCRIPTION file and
 returns their metadata.
 }

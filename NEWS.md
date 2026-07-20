@@ -1,3 +1,10 @@
+# saber 0.7.2.2 (development)
+
+- New exports `git_commit_count_since()` and `git_log_since()`: the git
+  count/log primitives behind `heartbeat()`, for downstream tooling that
+  composes its own activity reports. `git_log_since()` supports an
+  unbounded window (`since_date = NULL`) and an `"iso"` line format.
+
 # saber 0.7.2.1 (development)
 
 - New `heartbeat()`: cross-project git activity summary. Scans every

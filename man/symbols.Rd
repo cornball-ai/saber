@@ -1,7 +1,7 @@
 % tinyrox says don't edit this manually, but it can't stop you!
 \name{symbols}
 \alias{symbols}
-\title{Code intelligence: AST symbol index}
+\title{Build a symbol index for a project}
 \usage{
 symbols(project_dir,
         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
@@ -19,8 +19,9 @@ A list with components:
   }
 }
 \description{
-Parse R source files into structured function definitions and
-  call relationships.
+Parses all \code{R/*.R} files in a project directory using
+\code{getParseData()} to extract function definitions and function calls.
+Results are cached as RDS in the user cache directory.
 }
 \examples{
 # Create a minimal project with R source files

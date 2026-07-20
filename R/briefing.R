@@ -157,4 +157,3 @@ briefing_git <- function(project, scan_dir) {
     }
     lines
 }
-
