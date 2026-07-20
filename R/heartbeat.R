@@ -159,11 +159,17 @@ git_log_since <- function(repo_dir, since_date = NULL, n = 5L,
     } else {
         shQuote(sprintf("--since=%s 00:00", as.character(since_date)))
     }
-    tryCatch(
-             suppressWarnings(system2("git",
-                                      c("-C", repo_dir, "log", fmt_args, since_args,
-                                        sprintf("-%d", as.integer(n))),
-                                      stdout = TRUE, stderr = FALSE)),
-             error = function(e) character(0L)
+    out <- tryCatch(
+                    suppressWarnings(system2("git",
+                                             c("-C", repo_dir, "log", fmt_args, since_args,
+                                               sprintf("-%d", as.integer(n))),
+                                             stdout = TRUE, stderr = FALSE)),
+                    error = function(e) character(0L)
     )
+    # A failed git (non-repo, empty repo) exits non-zero and system2()
+    # tags the result with a status attribute; that is an empty log
+    if (!is.null(attr(out, "status"))) {
+        return(character(0L))
+    }
+    out
 }
