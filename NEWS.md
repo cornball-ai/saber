@@ -1,3 +1,14 @@
+# saber 0.7.2.3 (development)
+
+- New `context_manifest()`, `context_render()`, and `context_audit()` provide
+  explicit source routing, native-file suppression, exact deduplication,
+  provenance, and named character/line budgets. Print methods and audit
+  results expose metadata without source bodies. Existing `agent_context()`
+  and `pkg_help()` behavior is unchanged; no dependencies or R version
+  requirements were added.
+- The session-start hook now reads littler's `argv` as well as Rscript's
+  command arguments, so explicit consumer names work with either launcher.
+
 # saber 0.7.2.2 (development)
 
 - New exports `git_commit_count_since()` and `git_log_since()`: the git
