@@ -99,7 +99,7 @@ for (path in c(first, copy)) {
 m <- manifest(list(source_file("relative", "./first.md")),
               native_paths = "first.md")
 expect_identical(row(m, "relative")$requested_path, "./first.md")
-expect_identical(row(m, "relative")$path, file.path(root, "./first.md"))
+expect_identical(row(m, "relative")$path, file.path(m$project_dir, "./first.md"))
 expect_identical(row(m, "relative")$canonical_path, normalizePath(first))
 expect_identical(m$sources$requested_path[m$sources$delivery == "native"],
                  "first.md")
@@ -118,6 +118,17 @@ expect_true(length(capture.output(print(older))) > 0L)
 expect_true(length(capture.output(print(context_audit(older)))) > 0L)
 
 if (.Platform$OS.type != "windows") {
+    alias <- tempfile("saber-context-alias-")
+    if (file.symlink(root, alias)) {
+        alias_file <- file.path(alias, "first.md")
+        for (paths in list(c("first.md", alias_file), c(alias_file, first))) {
+            m <- context_manifest("corteza", project_dir = alias, discover = FALSE,
+                                  native_paths = paths)
+            expect_equal(sum(m$sources$delivery == "native"), 1)
+            expect_identical(m$sources$requested_path, paths[[1L]])
+        }
+        unlink(alias)
+    }
     link <- file.path(root, "link.md")
     linked <- file.symlink(first, link)
     if (linked) {

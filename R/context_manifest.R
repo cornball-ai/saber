@@ -80,8 +80,10 @@ context_manifest <- function(agent, project_dir = getwd(),
     project_dir <- normalizePath(context_path(project_dir, getwd()),
                                  mustWork = FALSE)
     specs <- context_discover(project_dir, workspace_dir, shared_path, discover)
-    resolved_native <- vapply(native_paths, context_path, "", project_dir = project_dir)
-    native_paths <- native_paths[!duplicated(resolved_native)]
+    native_keys <- vapply(native_paths, function(path) {
+        normalizePath(context_path(path, project_dir), mustWork = FALSE)
+    }, "")
+    native_paths <- native_paths[!duplicated(native_keys)]
     native <- lapply(native_paths, function(path) {
         list(id = paste0("native:", context_path(path, project_dir)),
              kind = "native", path = path, delivery = "native",
