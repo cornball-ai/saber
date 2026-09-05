@@ -2,7 +2,7 @@ Package: saber
 Type: Package
 Title: Context Engineering for Large Language Model Agents
 Version: 0.7.2.3
-Date: 2026-06-24
+Date: 2026-09-05
 Authors@R: c(
     person("Troy", "Hernandez", role = c("aut", "cre"),
            email = "troy@cornball.ai",
