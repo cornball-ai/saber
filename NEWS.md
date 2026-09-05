@@ -1,3 +1,18 @@
+# saber 0.7.2.3 (development)
+
+- New `context_manifest()`, `context_render()`, and `context_audit()` provide
+  explicit source routing, native-file suppression, exact deduplication,
+  provenance, and named character/line budgets. Print methods and audit
+  results expose metadata without source bodies. Existing `agent_context()`
+  and `pkg_help()` behavior is unchanged; no dependencies or R version
+  requirements were added.
+- Native coverage only suppresses sources when its audience matches the
+  current consumer. Source metadata retains `requested_path` alongside
+  resolved and canonical paths. Native path aliases are deduplicated by
+  canonical identity, preserving the first requested spelling.
+- The session-start hook now reads littler's `argv` as well as Rscript's
+  command arguments, so explicit consumer names work with either launcher.
+
 # saber 0.7.2.2 (development)
 
 - New exports `git_commit_count_since()` and `git_log_since()`: the git
@@ -7,6 +22,20 @@
 
 # saber 0.7.2.1 (development)
 
+- New `src_symbols()`: C, C++, Python, Rust, and JavaScript symbol index for
+  any repository via tree-sitter (suggested `bonsaisitter` runtime + a
+  grammar package per language: `treesitter.c`, `treesitter.cpp`,
+  `treesitter.python`, `treesitter.rust`, `treesitter.javascript`). Mirrors
+  `symbols()` with a `lang` column; `exported` marks definitions visible
+  beyond their own file (non-`static` in C/C++, no leading underscore in
+  Python, `pub` in Rust, `export`-wrapped in JavaScript). New
+  `default_src_exclude()` lists directories skipped while scanning: the
+  `default_exclude()` opt-outs (`Documents` and friends) plus
+  dependency/build trees (`node_modules`, `__pycache__`, `venv`, `build`,
+  `dist`, `renv`, `target`); hidden and `*.Rcheck` directories are always
+  skipped.
+- `blast_radius()` gains `include = "src"` to report C/C++/Python/Rust/JS
+  callers from the target project's sources.
 - New `heartbeat()`: cross-project git activity summary. Scans every
   repository under `scan_dir`, reports projects with commits in the lookback
   window (busiest first), and writes `briefs/_heartbeat.md`. The one-glance

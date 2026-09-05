@@ -14,8 +14,9 @@ blast_radius(fn, project = NULL, include = "r", scan_dir = path.expand("~"),
 
 \item{include}{Character vector. Any of \code{"r"} (R source, default),
 \code{"examples"} (roxygen \verb{@examples} blocks in the target
-project), and \code{"vignettes"} (code chunks in the target project's
-vignettes).}
+project), \code{"vignettes"} (code chunks in the target project's
+vignettes), and \code{"src"} (the target project's C, C++, Python,
+Rust, and JavaScript sources).}
 
 \item{scan_dir}{Directory to scan for downstream projects.}
 
@@ -26,7 +27,8 @@ scanning for downstream projects.}
 }
 \value{
 A data.frame with columns: caller, project, file, line, source.
-  \code{source} is one of \code{"r"}, \code{"example"}, \code{"vignette"}.
+  \code{source} is one of \code{"r"}, \code{"example"}, \code{"vignette"},
+  \code{"src"}.
 }
 \description{
 Given a function name and project, finds all internal callers within that
@@ -38,6 +40,13 @@ With \code{include = c("r", "examples", "vignettes")} the search can be
 extended to references in the target project's roxygen \verb{@examples}
 blocks and vignette code chunks (Rmd, qmd, Rnw). Documentation scanning is
 target-project only; it does not walk downstream projects' docs.
+
+With \code{include = "src"} the target project's C, C++, Python, Rust,
+and JavaScript sources are searched via \code{\link{src_symbols}},
+reporting their callers of \code{fn}. This requires the suggested
+\pkg{bonsaisitter} runtime plus a grammar package per language (see
+\code{\link{src_symbols}}) and, like documentation scanning, is
+target-project only.
 
 }
 \examples{

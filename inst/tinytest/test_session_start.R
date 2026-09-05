@@ -53,7 +53,7 @@ writeLines(c(
 writeLines("This body file should not be preloaded.",
            file.path(memory_dir, "memory-body.md"))
 
-output <- system2(file.path(R.home("bin"), "Rscript"), c(script, "claude"),
+output <- system2(file.path(R.home("bin"), "Rscript"), c("--vanilla", script, "claude"),
                   stdout = TRUE, stderr = TRUE,
                   env = c(sprintf("HOME=%s", home_dir),
                           sprintf("CODEX_HOME=%s", codex_home)))
@@ -70,6 +70,18 @@ expect_false(any(grepl("hookpkg memory index entry", output, fixed = TRUE)))
 expect_true(any(grepl("saber is meant to be reciprocal", output,
                       fixed = TRUE)))
 expect_false(any(grepl("^# Briefing: hookpkg$", output)))
+
+# Older handlers also use littler, whose arguments live in argv.
+littler <- Sys.which("r")
+if (nzchar(littler)) {
+    littler_output <- system2(littler, c(shQuote(script), "claude"),
+                              stdout = TRUE, stderr = TRUE,
+                              env = c(sprintf("HOME=%s", home_dir),
+                                      sprintf("CODEX_HOME=%s", codex_home)))
+    expect_true(any(grepl("Use saber before guessing.", littler_output, fixed = TRUE)))
+    expect_true(any(grepl("saber is meant to be reciprocal", littler_output, fixed = TRUE)))
+    expect_false(any(grepl("hookpkg memory index entry", littler_output, fixed = TRUE)))
+}
 
 codex_output <- system2(file.path(R.home("bin"), "Rscript"), c(script, "codex"),
                         stdout = TRUE, stderr = TRUE,

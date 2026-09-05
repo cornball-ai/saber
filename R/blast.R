@@ -12,18 +12,27 @@
 #' blocks and vignette code chunks (Rmd, qmd, Rnw). Documentation scanning is
 #' target-project only; it does not walk downstream projects' docs.
 #'
+#' With \code{include = "src"} the target project's C, C++, Python, Rust,
+#' and JavaScript sources are searched via \code{\link{src_symbols}},
+#' reporting their callers of \code{fn}. This requires the suggested
+#' \pkg{bonsaisitter} runtime plus a grammar package per language (see
+#' \code{\link{src_symbols}}) and, like documentation scanning, is
+#' target-project only.
+#'
 #' @param fn Character. Function name to search for.
 #' @param project Character. Project name (or path to project directory).
 #' @param include Character vector. Any of \code{"r"} (R source, default),
 #'   \code{"examples"} (roxygen \verb{@examples} blocks in the target
-#'   project), and \code{"vignettes"} (code chunks in the target project's
-#'   vignettes).
+#'   project), \code{"vignettes"} (code chunks in the target project's
+#'   vignettes), and \code{"src"} (the target project's C, C++, Python,
+#'   Rust, and JavaScript sources).
 #' @param scan_dir Directory to scan for downstream projects.
 #' @param cache_dir Directory for symbol cache files.
 #' @param exclude Character vector of directory basenames to skip when
 #'   scanning for downstream projects.
 #' @return A data.frame with columns: caller, project, file, line, source.
-#'   \code{source} is one of \code{"r"}, \code{"example"}, \code{"vignette"}.
+#'   \code{source} is one of \code{"r"}, \code{"example"}, \code{"vignette"},
+#'   \code{"src"}.
 #' @examples
 #' # Create a minimal project
 #' d <- file.path(tempdir(), "blastpkg")
@@ -43,7 +52,7 @@ blast_radius <- function(fn, project = NULL, include = "r",
                          scan_dir = path.expand("~"),
                          cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
                          exclude = default_exclude()) {
-    allowed <- c("r", "examples", "vignettes")
+    allowed <- c("r", "examples", "vignettes", "src")
     bad <- setdiff(include, allowed)
     if (length(bad) > 0L) {
         stop("invalid 'include' value(s): ", paste(bad, collapse = ", "),
@@ -111,6 +120,21 @@ blast_radius <- function(fn, project = NULL, include = "r",
     # 4. Target-project vignettes
     if ("vignettes" %in% include && dir.exists(project_dir)) {
         results <- rbind(results, scan_vignettes(project_dir, fn))
+    }
+
+    # 5. Target-project C/C++/Python sources
+    if ("src" %in% include && dir.exists(project_dir)) {
+        src_syms <- src_symbols(project_dir, cache_dir = cache_dir)
+        src_callers <- src_syms$calls[src_syms$calls$callee == fn,, drop = FALSE]
+        if (nrow(src_callers) > 0L) {
+            results <- rbind(results,
+                             data.frame(caller = src_callers$caller,
+                                        project = project_name,
+                                        file = src_callers$file,
+                                        line = src_callers$line,
+                                        source = "src",
+                                        stringsAsFactors = FALSE))
+        }
     }
 
     results

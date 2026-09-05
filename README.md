@@ -26,13 +26,14 @@ See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-de
 
 ## What it does
 
-**13 exported functions.**
-
 ### Agent context
 
 | Function | What it does |
 |---|---|
 | `agent_context()` | Assemble memory, identity, and instruction files for an agent |
+| `context_manifest()` | Track context sources, native loading, deduplication, and budgets |
+| `context_render()` | Render the manifest's selected context |
+| `context_audit()` | Inspect source metadata and costs without printing source contents |
 | `briefing()` | Generate a project briefing (metadata, dependents, git log) |
 
 ### Code intelligence
@@ -72,6 +73,31 @@ saber::agent_context(agent = "claude")
 # Codex agent with workspace identity
 saber::agent_context(agent = "codex", workspace_dir = "~/.codex/workspace")
 ```
+
+For explicit routing and source-level diagnostics:
+
+```r
+m <- saber::context_manifest(
+    "corteza",
+    shared_path = "~/.config/agents/GLOBAL.md",
+    extra_sources = list(
+        list(id = "runtime", kind = "runtime", order = -1,
+             text = "R objects persist across turns."),
+        list(id = "project_memory", kind = "memory", path = "notes/MEMORY.md")
+    ),
+    budgets = list(memory = list(max_lines = 100L))
+)
+saber::context_audit(m)       # metadata, counts, hashes, reasons; no source bodies
+cat(saber::context_render(m)) # explicit request for the selected text
+```
+
+The new API reads shared preferences and prefers project `AGENTS.md`, falling
+back to `CLAUDE.md`. It does not inherit the Claude global file or discover
+memories implicitly. Supply memory paths and consumer-owned runtime layers
+explicitly; set `discover = FALSE` to compose only supplied sources.
+Consumers that load files natively must list those paths in `native_paths`.
+Budgets are opt-in and their losses remain visible in the manifest and audit.
+The existing `agent_context()` defaults and character return value are unchanged.
 
 Generate a project briefing:
 
