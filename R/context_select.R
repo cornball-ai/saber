@@ -92,7 +92,9 @@ context_select <- function(specs, loaded, agent, budgets) {
     }
     rows <- lapply(seq_along(specs),
                    function(i) context_source_row(specs[[i]], loaded[[i]]))
-    native <- which(vapply(specs, function(x) x$delivery == "native", logical(1)))
+    native <- which(vapply(specs, function(x) {
+        x$delivery == "native" && any(x$audience %in% c("*", agent))
+    }, logical(1)))
     accepted <- integer()
     fragments <- structure(rep("", length(specs)), names = vapply(specs, `[[`, "", "id"))
     ids <- names(fragments)
@@ -136,11 +138,11 @@ context_select <- function(specs, loaded, agent, budgets) {
 
 context_source_decision <- function(spec, input, loaded, agent, native,
                                     accepted, fallback) {
-    if (spec$delivery == "native") {
-        return(list(reason = "native_autoload"))
-    }
     if (!any(spec$audience %in% c("*", agent))) {
         return(list(reason = "audience_excluded"))
+    }
+    if (spec$delivery == "native") {
+        return(list(reason = "native_autoload"))
     }
     duplicate <- context_duplicate(input, loaded, native)
     if (!is.null(duplicate)) {

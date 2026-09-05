@@ -42,6 +42,9 @@ A \code{saber_context_manifest} list with schema_version, agent,
   project_dir, estimator, budgets, a sources data frame, and named
   fragments. The data frame records paths, audience, delivery, inclusion
   reasons, duplicate ids, source and emitted sizes/hashes, and budget loss.
+  \code{requested_path} preserves the original source path, \code{path}
+  resolves it against project_dir and expands tilde, and \code{canonical_path}
+  resolves existing paths and symbolic links. Generated text uses empty paths.
 }
 \description{
 Discovers shared and project instructions, records source provenance, and
@@ -67,8 +70,8 @@ order to place generated layers before or between discovered sources.
 
 Files are read as UTF-8 without rewriting whitespace or line endings.
 Deduplication compares canonical paths and exact bytes before budgets,
-with native sources taking precedence regardless of order. Missing and
-unreadable native files can still suppress injection of the same path,
+with native sources for the current audience taking precedence regardless
+of order. Missing and unreadable native files can still suppress the same path,
 but cannot establish equality to other files. MD5 fingerprints identify
 content, not authenticity; byte equality confirms content matches.
 

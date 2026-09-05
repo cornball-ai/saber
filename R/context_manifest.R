@@ -23,6 +23,9 @@
 #'   project_dir, estimator, budgets, a sources data frame, and named
 #'   fragments. The data frame records paths, audience, delivery, inclusion
 #'   reasons, duplicate ids, source and emitted sizes/hashes, and budget loss.
+#'   \code{requested_path} preserves the original source path, \code{path}
+#'   resolves it against project_dir and expands tilde, and \code{canonical_path}
+#'   resolves existing paths and symbolic links. Generated text uses empty paths.
 #' @details
 #' Discovery prefers AGENTS.md and falls back to CLAUDE.md when AGENTS.md is
 #' missing, empty, or unreadable. Both candidates remain in the manifest.
@@ -41,8 +44,8 @@
 #'
 #' Files are read as UTF-8 without rewriting whitespace or line endings.
 #' Deduplication compares canonical paths and exact bytes before budgets,
-#' with native sources taking precedence regardless of order. Missing and
-#' unreadable native files can still suppress injection of the same path,
+#' with native sources for the current audience taking precedence regardless
+#' of order. Missing and unreadable native files can still suppress the same path,
 #' but cannot establish equality to other files. MD5 fingerprints identify
 #' content, not authenticity; byte equality confirms content matches.
 #'
@@ -77,9 +80,10 @@ context_manifest <- function(agent, project_dir = getwd(),
     project_dir <- normalizePath(context_path(project_dir, getwd()),
                                  mustWork = FALSE)
     specs <- context_discover(project_dir, workspace_dir, shared_path, discover)
-    native_paths <- unique(vapply(native_paths, context_path, "", project_dir = project_dir))
+    resolved_native <- vapply(native_paths, context_path, "", project_dir = project_dir)
+    native_paths <- native_paths[!duplicated(resolved_native)]
     native <- lapply(native_paths, function(path) {
-        list(id = paste0("native:", path),
+        list(id = paste0("native:", context_path(path, project_dir)),
              kind = "native", path = path, delivery = "native",
              native_evidence = "native_paths argument")
     })
@@ -149,8 +153,10 @@ context_descriptor <- function(x, index, project_dir) {
         stop("Each source requires exactly one of path or text.", call. = FALSE)
     }
     if ("path" %in% names(x)) {
+        x$requested_path <- x$path
         x$path <- context_path(x$path, project_dir)
     } else {
+        x$requested_path <- ""
         context_string(x$text, "text", empty = TRUE)
     }
     x$audience <- x$audience %||% "*"

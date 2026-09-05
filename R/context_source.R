@@ -91,7 +91,8 @@ context_read_source <- function(spec) {
 
 context_source_row <- function(spec, input) {
     data.frame(id = spec$id, kind = spec$kind, order = spec$order,
-               path = input$path, canonical_path = input$canonical_path,
+               requested_path = spec$requested_path, path = input$path,
+               canonical_path = input$canonical_path,
                audience = paste(spec$audience, collapse = ", "),
                delivery = spec$delivery, origin = spec$origin,
                scope = spec$scope, config_path = spec$config_path,

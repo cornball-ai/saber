@@ -116,10 +116,13 @@ context_display_sources <- function(sources, abbreviate_home) {
     columns <- c("id", "kind", "delivery", "status", "included", "reason",
                  "source_chars", "source_lines", "source_tokens",
                  "emitted_tokens", "truncated", "budget", "omitted_chars",
-                 "omitted_lines", "path", "source_hash")
+                 "omitted_lines", "requested_path", "path", "source_hash")
+    if (!"requested_path" %in% names(sources)) {
+        columns <- setdiff(columns, "requested_path")
+    }
     out <- sources[, columns, drop = FALSE]
     if (abbreviate_home) {
-        for (name in c("id", "path")) {
+        for (name in intersect(c("id", "requested_path", "path"), columns)) {
             out[[name]] <- gsub(paste0(path.expand("~"), "/"), "~/", out[[name]], fixed = TRUE)
         }
     }

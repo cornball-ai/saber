@@ -6,6 +6,9 @@
   results expose metadata without source bodies. Existing `agent_context()`
   and `pkg_help()` behavior is unchanged; no dependencies or R version
   requirements were added.
+- Native coverage only suppresses sources when its audience matches the
+  current consumer. Source metadata retains `requested_path` alongside
+  resolved and canonical paths.
 - The session-start hook now reads littler's `argv` as well as Rscript's
   command arguments, so explicit consumer names work with either launcher.
 

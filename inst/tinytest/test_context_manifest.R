@@ -65,6 +65,58 @@ expect_identical(row(m, "inject")$duplicate_of, "native")
 expect_true("native_overlap" %in% context_audit(m)$findings$code)
 expect_equal(context_audit(m)$total[["tokens"]], 0)
 
+# Coverage for another consumer cannot suppress this consumer's context.
+foreign_native <- source_text("claude_native", "shared instructions",
+                              delivery = "native",
+                              audience = c("claude", "codex"))
+injectable <- source_text("corteza_context", "shared instructions",
+                          audience = "corteza")
+for (sources in list(list(foreign_native, injectable),
+                     list(injectable, foreign_native))) {
+    m <- manifest(sources)
+    expect_identical(context_render(m), "shared instructions")
+    expect_identical(row(m, "corteza_context")$reason, "included")
+    expect_identical(row(m, "corteza_context")$duplicate_of, "")
+    expect_identical(row(m, "claude_native")$reason, "audience_excluded")
+    expect_false("native_overlap" %in% context_audit(m)$findings$code)
+}
+for (audience in list("*", c("claude", "corteza"))) {
+    matching_native <- foreign_native
+    matching_native$audience <- audience
+    m <- manifest(list(injectable, matching_native))
+    expect_identical(context_render(m), "")
+    expect_identical(row(m, "corteza_context")$duplicate_of, "claude_native")
+}
+for (path in c(first, copy)) {
+    m <- manifest(list(source_file("claude_native", first,
+                                   delivery = "native", audience = "claude"),
+                       source_file("inject", path)))
+    expect_identical(context_render(m), "private text\n")
+    expect_true(row(m, "inject")$included)
+}
+
+# Preserve the literal source path separately from resolution and identity.
+m <- manifest(list(source_file("relative", "./first.md")),
+              native_paths = "first.md")
+expect_identical(row(m, "relative")$requested_path, "./first.md")
+expect_identical(row(m, "relative")$path, file.path(root, "./first.md"))
+expect_identical(row(m, "relative")$canonical_path, normalizePath(first))
+expect_identical(m$sources$requested_path[m$sources$delivery == "native"],
+                 "first.md")
+home_relative <- paste0("~/", basename(root), "/missing.md")
+m <- manifest(list(source_file("home_relative", home_relative),
+                   source_text("generated", "context")))
+expect_identical(row(m, "home_relative")$requested_path, home_relative)
+expect_identical(row(m, "home_relative")$path, path.expand(home_relative))
+expect_identical(row(m, "generated")$requested_path, "")
+
+# Earlier manifest snapshots remain renderable and printable.
+older <- m
+older$sources$requested_path <- NULL
+expect_identical(context_render(older), context_render(m))
+expect_true(length(capture.output(print(older))) > 0L)
+expect_true(length(capture.output(print(context_audit(older)))) > 0L)
+
 if (.Platform$OS.type != "windows") {
     link <- file.path(root, "link.md")
     linked <- file.symlink(first, link)
