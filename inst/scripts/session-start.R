@@ -6,6 +6,12 @@
 #   agent: "claude", "codex", or omit for interactive default
 
 cli_args <- commandArgs(trailingOnly = TRUE)
+if (length(cli_args) == 0L && exists("argv", envir = .GlobalEnv, inherits = FALSE)) {
+    littler_args <- get("argv", envir = .GlobalEnv, inherits = FALSE)
+    if (is.character(littler_args)) {
+        cli_args <- littler_args
+    }
+}
 agent <- if (length(cli_args) > 0L) cli_args[[1L]] else NULL
 
 session_cwd <- getwd()
