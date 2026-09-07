@@ -5,7 +5,9 @@
 #' Discover R package projects
 #'
 #' Scans a directory for subdirectories containing a DESCRIPTION file and
-#' returns their metadata.
+#' returns their metadata. Symbolic-link aliases of the same directory are
+#' reported once, preferring its non-alias path when present. Separate
+#' checkouts remain separate even when they declare the same package name.
 #'
 #' @param scan_dir Directory to scan for project directories.
 #' @param exclude Character vector of directory basenames to skip.
@@ -21,8 +23,7 @@
 #' projects(scan_dir = d)
 #' @export
 projects <- function(scan_dir = path.expand("~"), exclude = default_exclude()) {
-    project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
-    project_dirs <- project_dirs[!basename(project_dirs) %in% exclude]
+    project_dirs <- project_directories(scan_dir, exclude)
 
     rows <- list()
     for (d in project_dirs) {
@@ -86,8 +87,7 @@ projects <- function(scan_dir = path.expand("~"), exclude = default_exclude()) {
 #' @export
 find_downstream <- function(package, scan_dir = path.expand("~"),
                             exclude = default_exclude()) {
-    project_dirs <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
-    project_dirs <- project_dirs[!basename(project_dirs) %in% exclude]
+    project_dirs <- project_directories(scan_dir, exclude)
     downstream <- character(0L)
 
     for (d in project_dirs) {
@@ -114,6 +114,20 @@ find_downstream <- function(package, scan_dir = path.expand("~"),
     }
 
     downstream
+}
+
+#' Discover directories once per filesystem identity
+#' @noRd
+project_directories <- function(scan_dir, exclude) {
+    paths <- list.dirs(scan_dir, recursive = FALSE, full.names = TRUE)
+    paths <- paths[!basename(paths) %in% exclude]
+    canonical <- normalizePath(paths, winslash = "/", mustWork = FALSE)
+    requested <- file.path(normalizePath(scan_dir, winslash = "/",
+                                         mustWork = FALSE), basename(paths))
+    keys <- if (.Platform$OS.type == "windows") tolower(canonical) else canonical
+    preference <- order(requested != canonical, seq_along(paths))
+    keep <- preference[!duplicated(keys[preference])]
+    paths[sort(keep)]
 }
 
 #' Replace NA with empty string
