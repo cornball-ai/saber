@@ -4,6 +4,9 @@
 #
 # Usage: Rscript session-start.R [agent]
 #   agent: "claude", "codex", or omit for interactive default
+# Optional trailing --native-shared skips shared preferences only when the
+# consumer's native global entrypoint resolves to the same readable file.
+# Without the flag, historical injection behavior is unchanged.
 
 cli_args <- commandArgs(trailingOnly = TRUE)
 if (length(cli_args) == 0L && exists("argv", envir = .GlobalEnv, inherits = FALSE)) {
@@ -119,6 +122,30 @@ append_context <- function(text, section) {
     paste0(text, "\n\n", section)
 }
 
+native_shared_context <- function(agent, shared_path) {
+    native <- NULL
+    if (identical(agent, "claude")) {
+        config <- Sys.getenv("CLAUDE_CONFIG_DIR", unset = "")
+        if (!nzchar(config)) config <- "~/.claude"
+        native <- file.path(path.expand(config), "CLAUDE.md")
+    } else if (identical(agent, "codex")) {
+        config <- Sys.getenv("CODEX_HOME", unset = "")
+        if (!nzchar(config)) config <- "~/.codex"
+        native <- file.path(path.expand(config), "AGENTS.md")
+        override <- file.path(path.expand(config), "AGENTS.override.md")
+        if (file.exists(override) && !dir.exists(override) &&
+            !is.na(file.info(override)$size) && file.info(override)$size > 0) {
+            native <- override
+        }
+    }
+    if (is.null(native) || !file.exists(native) || dir.exists(native) ||
+        !file.exists(shared_path) || dir.exists(shared_path) ||
+        file.access(native, 4) != 0 || file.access(shared_path, 4) != 0) {
+        return(FALSE)
+    }
+    identical(normalizePath(native), normalizePath(shared_path))
+}
+
 repo_root <- resolve_repo_root(session_cwd)
 if (!is.null(repo_root)) {
     project <- basename(repo_root)
@@ -157,18 +184,24 @@ memory_text <- tryCatch(
 briefing_text <- append_context(briefing_text, memory_text)
 
 global_preferences <- load_global_preferences()
-if (!is.null(global_preferences)) {
+native_shared <- "--native-shared" %in% cli_args &&
+    native_shared_context(agent, global_preferences_path())
+if (!is.null(global_preferences) && !native_shared) {
     briefing_text <- append_context(briefing_text, global_preferences)
 }
 
-escaped <- gsub("\\\\", "\\\\\\\\", briefing_text)
-escaped <- gsub("\"", "\\\\\"", escaped)
-escaped <- gsub("\n", "\\\\n", escaped)
-escaped <- gsub("\t", "\\\\t", escaped)
+context_json_string <- function(text) {
+    points <- utf8ToInt(enc2utf8(text))
+    escaped <- vapply(points, function(x) {
+        if (x == 34L) return("\\\"")
+        if (x == 92L) return("\\\\")
+        if (x == 9L) return("\\t")
+        if (x == 10L) return("\\n")
+        if (x == 13L) return("\\r")
+        if (x < 32L) return(sprintf("\\u%04x", x))
+        intToUtf8(x)
+    }, "")
+    paste0('"', paste0(escaped, collapse = ""), '"')
+}
 
-cat(sprintf('{
-  "hookSpecificOutput": {
-    "hookEventName": "SessionStart",
-    "additionalContext": "%s"
-  }
-}', escaped))
+cat(sprintf('{\n  "hookSpecificOutput": {\n    "hookEventName": "SessionStart",\n    "additionalContext": %s\n  }\n}', context_json_string(briefing_text)))

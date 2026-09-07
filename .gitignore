@@ -8,5 +8,7 @@
 misc/
 *.Rproj
 .claude/
-CLAUDE.md
 *.Rcheck/
+
+# Private agent handoffs and local audit artifacts, never package sources.
+/tasks/

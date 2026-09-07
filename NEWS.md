@@ -1,3 +1,18 @@
+# saber 0.7.2.4 (development)
+
+- Preserve all existing exported APIs, defaults, legacy consumer aliases,
+  shared-file conventions, and existing hook invocations. No dependencies or
+  minimum R version changes.
+- The existing session-start script accepts an optional trailing
+  `--native-shared` flag. It suppresses shared preferences only when the
+  native global entrypoint resolves to the same readable file, respecting
+  Codex's override file. Without the flag, historical injection is unchanged.
+- Fix JSON escaping for all representable control characters in hook output.
+- Document portable registration through the installed package, all-event
+  SessionStart matching, and native shared-file links. Essential instructions
+  should remain available without hooks; Claude Explore/Plan limitations are
+  documented rather than treated as supported hook injection.
+
 # saber 0.7.2.3 (development)
 
 - New `context_manifest()`, `context_render()`, and `context_audit()` provide
