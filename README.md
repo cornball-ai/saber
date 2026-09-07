@@ -34,6 +34,8 @@ See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-de
 | `context_manifest()` | Track context sources, native loading, deduplication, and budgets |
 | `context_render()` | Render the manifest's selected context |
 | `context_audit()` | Inspect source metadata and costs without printing source contents |
+| `skill_manifest()` | Discover package and configured personal skills, with provenance |
+| `skill_read()` | Retrieve exact instructions or supporting text with drift checks |
 | `briefing()` | Generate a project briefing (metadata, dependents, git log) |
 
 ### Code intelligence
@@ -63,6 +65,46 @@ See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-de
 | `pkg_help()` | Pull help documentation as markdown |
 
 ## Examples
+
+### Package skills
+
+Package-owned skills ship under `inst/skills/<skill>/SKILL.md`; installation
+places them under `<library>/<package>/skills/<skill>/SKILL.md`. The older
+`inst/skills/<package>/<skill>/` form remains discoverable during migration.
+Keep personal policy and host inventory outside package tarballs.
+
+```r
+skills <- saber::skill_manifest(
+    packages = c("saber", "pensar"),
+    project_dirs = c("/path/to/saber", "/path/to/pensar")
+)
+print(skills) # ids, origins, versions, selection reasons; no instruction bodies
+skills$entries[skills$entries$selected, c("id", "name", "description")]
+cat(saber::skill_read(skills, "package:saber/saber"))
+```
+
+Checkouts are explicit, not guessed from `~/skills` or a hardcoded workspace.
+`packages = NULL` discovers installed packages in library precedence order;
+`packages = character()` skips them. Named `roots` can add personal skill
+directories. One package root wins as a whole (source first by default), so
+different versions are never spliced together. Duplicate names within that
+root are excluded, with a recorded reason. Across packages, ids are qualified.
+
+Discovery does not load namespaces, register tools, change native skill
+directories, or append a second catalog to an agent that already has one.
+Consumer integrations should pass the selected metadata to their session
+catalog and retrieve bodies/resources by exact id. References receive the
+same path and drift checks as `SKILL.md`. MD5 fingerprints detect accidental
+changes; they are not authenticity or trust checks.
+
+For local development, explicitly registered links can follow maintained
+source checkouts. They can break when switching to a branch without the skill.
+For installed packages, resolve `system.file("skills", package = "<package>")`
+again after library changes; long-lived links into an R-versioned library
+are fragile. Stable cache snapshots and consumer registration are separate
+setup work, not side effects of a briefing or manifest.
+
+### Agent and project context
 
 Assemble agent context from project and workspace files:
 
@@ -221,11 +263,11 @@ Then add the hook to `~/.codex/hooks.json`:
   "hooks": {
     "SessionStart": [
       {
-        "matcher": "startup|resume",
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "Rscript /path/to/session-start.R codex",
+            "command": "Rscript --vanilla -e 'source(system.file(\"scripts\", \"session-start.R\", package = \"saber\"))' codex --native-shared",
             "timeout": 15,
             "statusMessage": "Loading saber briefing"
           }
@@ -285,7 +327,7 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
         "hooks": [
           {
             "type": "command",
-            "command": "Rscript /path/to/session-start.R claude",
+            "command": "Rscript --vanilla -e 'source(system.file(\"scripts\", \"session-start.R\", package = \"saber\"))' claude --native-shared",
             "timeout": 15
           }
         ]
@@ -296,6 +338,56 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
 ```
 
 Every new session starts with the project's metadata, downstream dependents, and recent git commits already in context. The `claude` agent flag tells `briefing()` to skip Claude Code memory (which Claude Code autoloads separately).
+
+## Shared instructions across existing integrations
+
+saber's existing `agent_context()` integration, consumer names (including
+`llamar`), arguments, and defaults remain supported. The manifest API adds
+provenance; it does not require replacing an established shared-file setup.
+No new runtime dependencies are required.
+
+Maintain one user-level instruction file and make native entrypoints refer to
+it. For example, if `~/.claude/CLAUDE.md` is already the maintained source,
+`~/.codex/AGENTS.md` and `~/.config/agents/GLOBAL.md` can be symlinks to it.
+The latter is saber's existing shared-file convention, not another document
+to maintain. `AGENTS_GLOBAL_MD` still selects a different shared path.
+Inspect and reconcile existing files first; do not overwrite them or assume
+that two different instruction files are interchangeable.
+
+Within a project, keep `AGENTS.md` and `CLAUDE.md` as aliases of the same
+maintained content (either symlink direction works). Keep the relative symlink
+in version control where supported and exclude instruction files from R
+package tarballs. On platforms without symlink support, an explicit maintained
+copy or tested native import needs drift checks. Do not assume every consumer
+understands Claude's import syntax. Corteza reads shared/project sources via
+saber; its existing runtime and workspace layers remain consumer-owned.
+
+The hook commands above are POSIX-shell examples. They resolve the installed
+script at launch rather than pinning an R-version-specific library directory.
+Adapt quoting for the shell on Windows. Existing absolute script paths and
+littler invocations still work. No settings or hook trust are changed by
+installing the package; merge registrations into the client's existing settings
+and approve them through its normal trust workflow.
+
+An empty `SessionStart` matcher covers all supported sources, including
+startup, resume, clear, and compact. Keep unrelated hooks intact. The optional
+trailing `--native-shared` flag (saber 0.7.2.4+) skips shared injection only if
+the native global file and shared path resolve to the same readable file.
+Codex's nonempty `AGENTS.override.md` takes precedence in this check. A missing,
+distinct, or broken native path retains the shared injection. Without the flag,
+the script preserves its historical behavior. Older saber scripts ignore the
+extra flag and may duplicate shared text until upgraded; they do not lose it.
+Use the flag only with normal native instruction loading enabled; client
+exclusions and custom fallback rules need their own delivery verification.
+
+Keep mandatory rules in native instructions so disabled hooks do not remove
+them. Claude's Explore/Plan built-ins skip `CLAUDE.md`; `SubagentStart` cannot
+inject additional context. The parent must pass task-critical constraints and
+review results under the complete policy. General-purpose/custom subagent
+delivery, imports, and each installed client version need direct probes.
+See the official [Claude subagent documentation](https://code.claude.com/docs/en/sub-agents),
+[Claude hooks reference](https://code.claude.com/docs/en/hooks), and
+[Codex hooks documentation](https://learn.chatgpt.com/docs/hooks).
 
 ## License
 

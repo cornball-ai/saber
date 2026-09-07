@@ -1,3 +1,30 @@
+# saber 0.7.2.5 (development)
+
+- Deduplicate symbolic-link aliases in project and downstream discovery,
+  while preserving separate checkouts with identical package names.
+- Add read-only `skill_manifest()` and `skill_read()` for package-owned and
+  explicitly configured personal skills. Support flat and legacy layouts,
+  folded descriptions, whole-package source precedence, qualified ids, and
+  resource drift checks without dependencies or namespace loading.
+- Ship saber's own skill under `inst/skills/saber/`. Existing agent context
+  APIs and automatic startup behavior are unchanged. Registration and stable
+  installed-package snapshots remain explicit consumer setup work.
+
+# saber 0.7.2.4 (development)
+
+- Preserve all existing exported APIs, defaults, legacy consumer aliases,
+  shared-file conventions, and existing hook invocations. No dependencies or
+  minimum R version changes.
+- The existing session-start script accepts an optional trailing
+  `--native-shared` flag. It suppresses shared preferences only when the
+  native global entrypoint resolves to the same readable file, respecting
+  Codex's override file. Without the flag, historical injection is unchanged.
+- Fix JSON escaping for all representable control characters in hook output.
+- Document portable registration through the installed package, all-event
+  SessionStart matching, and native shared-file links. Essential instructions
+  should remain available without hooks; Claude Explore/Plan limitations are
+  documented rather than treated as supported hook injection.
+
 # saber 0.7.2.3 (development)
 
 - New `context_manifest()`, `context_render()`, and `context_audit()` provide
