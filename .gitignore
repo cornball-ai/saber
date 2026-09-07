@@ -7,7 +7,8 @@
 *.dll
 misc/
 *.Rproj
-.claude/
+.claude/*
+!.claude/skills/
 *.Rcheck/
 
 # Private agent handoffs and local audit artifacts, never package sources.

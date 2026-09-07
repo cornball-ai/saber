@@ -34,6 +34,8 @@ See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-de
 | `context_manifest()` | Track context sources, native loading, deduplication, and budgets |
 | `context_render()` | Render the manifest's selected context |
 | `context_audit()` | Inspect source metadata and costs without printing source contents |
+| `skill_manifest()` | Discover package and configured personal skills, with provenance |
+| `skill_read()` | Retrieve exact instructions or supporting text with drift checks |
 | `briefing()` | Generate a project briefing (metadata, dependents, git log) |
 
 ### Code intelligence
@@ -63,6 +65,46 @@ See the [tinyverse development toolchain](https://cornball.ai/posts/tinyverse-de
 | `pkg_help()` | Pull help documentation as markdown |
 
 ## Examples
+
+### Package skills
+
+Package-owned skills ship under `inst/skills/<skill>/SKILL.md`; installation
+places them under `<library>/<package>/skills/<skill>/SKILL.md`. The older
+`inst/skills/<package>/<skill>/` form remains discoverable during migration.
+Keep personal policy and host inventory outside package tarballs.
+
+```r
+skills <- saber::skill_manifest(
+    packages = c("saber", "pensar"),
+    project_dirs = c("/path/to/saber", "/path/to/pensar")
+)
+print(skills) # ids, origins, versions, selection reasons; no instruction bodies
+skills$entries[skills$entries$selected, c("id", "name", "description")]
+cat(saber::skill_read(skills, "package:saber/saber"))
+```
+
+Checkouts are explicit, not guessed from `~/skills` or a hardcoded workspace.
+`packages = NULL` discovers installed packages in library precedence order;
+`packages = character()` skips them. Named `roots` can add personal skill
+directories. One package root wins as a whole (source first by default), so
+different versions are never spliced together. Duplicate names within that
+root are excluded, with a recorded reason. Across packages, ids are qualified.
+
+Discovery does not load namespaces, register tools, change native skill
+directories, or append a second catalog to an agent that already has one.
+Consumer integrations should pass the selected metadata to their session
+catalog and retrieve bodies/resources by exact id. References receive the
+same path and drift checks as `SKILL.md`. MD5 fingerprints detect accidental
+changes; they are not authenticity or trust checks.
+
+For local development, explicitly registered links can follow maintained
+source checkouts. They can break when switching to a branch without the skill.
+For installed packages, resolve `system.file("skills", package = "<package>")`
+again after library changes; long-lived links into an R-versioned library
+are fragile. Stable cache snapshots and consumer registration are separate
+setup work, not side effects of a briefing or manifest.
+
+### Agent and project context
 
 Assemble agent context from project and workspace files:
 

@@ -1,3 +1,15 @@
+# saber 0.7.2.5 (development)
+
+- Deduplicate symbolic-link aliases in project and downstream discovery,
+  while preserving separate checkouts with identical package names.
+- Add read-only `skill_manifest()` and `skill_read()` for package-owned and
+  explicitly configured personal skills. Support flat and legacy layouts,
+  folded descriptions, whole-package source precedence, qualified ids, and
+  resource drift checks without dependencies or namespace loading.
+- Ship saber's own skill under `inst/skills/saber/`. Existing agent context
+  APIs and automatic startup behavior are unchanged. Registration and stable
+  installed-package snapshots remain explicit consumer setup work.
+
 # saber 0.7.2.4 (development)
 
 - Preserve all existing exported APIs, defaults, legacy consumer aliases,
