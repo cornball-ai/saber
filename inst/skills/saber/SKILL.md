@@ -3,8 +3,6 @@ name: saber
 description: Inspect R package APIs, symbols, downstream impact, and context provenance with saber.
 ---
 
-See [NOTICE.md](NOTICE.md) for the original skill's license notice.
-
 # saber: Code Analysis and Project Context
 
 Choose the operation relevant to the task; do not run every example or load
