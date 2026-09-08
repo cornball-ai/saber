@@ -87,7 +87,7 @@ maintained in dotfiles and linked into place:
 
 ```
 Hub: ~/skills
-Packages: ~/saber, ~/pensar, ~/mx.client, ~/viento
+Packages: ~/saber, ~/pensar, ~/mx.client
 AgentRoots: ~/.claude/skills, ~/.agents/skills
 ```
 
