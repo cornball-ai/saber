@@ -1,3 +1,12 @@
+# saber 0.7.2.6 (development)
+
+- Add the `agent-hygiene` skill under `inst/skills/agent-hygiene/`: the
+  layout contract for one shared instruction body and one flat skill hub,
+  how each consumer deduplicates, and `scripts/agent-hygiene.R`, which audits
+  instruction files, hub entries, agent roots, corteza roots, and Claude
+  plugins, and creates or repairs the symlinks. It never removes a real file.
+  `skill_manifest()` and the agent context APIs are unchanged.
+
 # saber 0.7.2.5 (development)
 
 - Deduplicate symbolic-link aliases in project and downstream discovery,
