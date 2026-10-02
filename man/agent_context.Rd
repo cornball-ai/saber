@@ -60,13 +60,17 @@ SOUL.md when present.
 \item \code{"corteza"} or \code{NULL} - loads everything available.
 }
 
-Project and global instructions are resolved by trying both naming
-conventions and picking the file relevant to the consumer:
-\itemize{
-\item Project: \code{CLAUDE.md} or \code{AGENTS.md}
-\item Global: \code{~/.claude/CLAUDE.md} or
-\code{<workspace_dir>/USER.md}
-}
+Project instructions merge \code{CLAUDE.md} and \code{AGENTS.md}. The
+file the consumer autoloads is left out, and so is any heading-delimited
+section whose text the consumer already holds. Two names for one file, or
+two identical copies, add nothing; a consumer with no autoloaded file
+receives \code{CLAUDE.md} followed by the sections only \code{AGENTS.md}
+has. Sections are compared verbatim, so the same rule in different words
+is loaded from both files.
+
+Global instructions are resolved by trying both naming conventions and
+picking the file relevant to the consumer: \code{~/.claude/CLAUDE.md} or
+\code{<workspace_dir>/USER.md}.
 
 Override the defaults with the \code{include_*} parameters.
 

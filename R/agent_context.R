@@ -19,13 +19,17 @@
 #'   \item \code{"corteza"} or \code{NULL} - loads everything available.
 #' }
 #'
-#' Project and global instructions are resolved by trying both naming
-#' conventions and picking the file relevant to the consumer:
-#' \itemize{
-#'   \item Project: \code{CLAUDE.md} or \code{AGENTS.md}
-#'   \item Global: \code{~/.claude/CLAUDE.md} or
-#'     \code{<workspace_dir>/USER.md}
-#' }
+#' Project instructions merge \code{CLAUDE.md} and \code{AGENTS.md}. The
+#' file the consumer autoloads is left out, and so is any heading-delimited
+#' section whose text the consumer already holds. Two names for one file, or
+#' two identical copies, add nothing; a consumer with no autoloaded file
+#' receives \code{CLAUDE.md} followed by the sections only \code{AGENTS.md}
+#' has. Sections are compared verbatim, so the same rule in different words
+#' is loaded from both files.
+#'
+#' Global instructions are resolved by trying both naming conventions and
+#' picking the file relevant to the consumer: \code{~/.claude/CLAUDE.md} or
+#' \code{<workspace_dir>/USER.md}.
 #'
 #' Override the defaults with the \code{include_*} parameters.
 #'
@@ -253,61 +257,53 @@ agent_context_codex_memory_dir <- function() {
     file.path(path.expand(codex_home), "memories")
 }
 
-#' Resolve and load project instructions (CLAUDE.md or AGENTS.md)
+#' Merge and load project instructions (CLAUDE.md and AGENTS.md)
 #'
-#' Picks the file the consumer doesn't already autoload. Ties broken by
-#' preferring CLAUDE.md.
+#' Loads both files, CLAUDE.md first, without the one the consumer
+#' autoloads. A section whose text the consumer already holds, from the
+#' autoloaded file or the file loaded before it, is dropped. Aliases and
+#' identical copies therefore add nothing.
 #' @noRd
 agent_context_project <- function(project_dir, agent, forced = FALSE) {
-    claude_path <- file.path(project_dir, "CLAUDE.md")
-    agents_path <- file.path(project_dir, "AGENTS.md")
-    claude_exists <- file.exists(claude_path)
-    agents_exists <- file.exists(agents_path)
+    paths <- file.path(project_dir, c("CLAUDE.md", "AGENTS.md"))
+    native <- agent_context_native_project(paths, agent, forced)
+    seen <- md_section_keys(agent_context_read(native))
 
-    if (!claude_exists && !agents_exists) {
-        return(character(0L))
+    out <- character(0L)
+    for (path in setdiff(paths, native)) {
+        new <- md_new_sections(agent_context_read(path), seen)
+        if (length(new$lines) == 0L) {
+            next
+        }
+        seen <- c(seen, new$keys)
+        label <- basename(path)
+        if (new$dropped > 0L) {
+            label <- paste(label, "(sections not already loaded)")
+        }
+        out <- c(out, if (length(out) > 0L) "", sprintf("## %s", label), "",
+                 new$lines)
     }
+    out
+}
 
-    file_to_load <- NULL
+#' Project file the consumer autoloads, or NULL
+#'
+#' A forced include or an unknown consumer has no autoloaded file.
+#' @noRd
+agent_context_native_project <- function(paths, agent, forced) {
     if (forced || is.na(agent)) {
-        # User overrode the default, or unknown agent: prefer CLAUDE.md
-        if (claude_exists) {
-            file_to_load <- claude_path
-        } else {
-            file_to_load <- agents_path
-        }
-    } else if (identical(agent, "claude")) {
-        # claude autoloads CLAUDE.md; only load AGENTS.md if it exists
-        # and is a distinct file
-        if (agents_exists && !same_file(claude_path, agents_path)) {
-            file_to_load <- agents_path
-        }
-    } else if (identical(agent, "codex")) {
-        # codex autoloads AGENTS.md; only load CLAUDE.md if it exists
-        # and is a distinct file
-        if (claude_exists && !same_file(claude_path, agents_path)) {
-            file_to_load <- claude_path
-        }
-    } else {
-        # corteza / legacy aliases / unknown: prefer CLAUDE.md, fall back to AGENTS.md
-        if (claude_exists) {
-            file_to_load <- claude_path
-        } else {
-            file_to_load <- agents_path
-        }
+        return(NULL)
     }
+    switch(agent, claude = paths[[1L]], codex = paths[[2L]], NULL)
+}
 
-    if (is.null(file_to_load)) {
+#' Read an instruction file, or nothing when it is absent or unreadable
+#' @noRd
+agent_context_read <- function(path) {
+    if (is.null(path) || !file.exists(path) || dir.exists(path)) {
         return(character(0L))
     }
-
-    content <- tryCatch(readLines(file_to_load, warn = FALSE),
-                        error = function(e) character(0L))
-    if (length(content) == 0L) {
-        return(character(0L))
-    }
-
-    c(sprintf("## %s", basename(file_to_load)), "", content)
+    tryCatch(readLines(path, warn = FALSE), error = function(e) character(0L))
 }
 
 #' Resolve and load global instructions

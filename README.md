@@ -285,7 +285,7 @@ If you want neutral cross-agent preferences injected too, create
 `~/.config/agents/GLOBAL.md`. The hook appends it automatically after the
 project briefing. Set `AGENTS_GLOBAL_MD` if you want a different path.
 
-Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), recent git commits, and optional global preferences already in context.
+Every new Codex session starts with the project's metadata, downstream dependents, Claude Code memory (if available), recent git commits, and optional global preferences already in context. A project `CLAUDE.md` is included too, minus any sections `AGENTS.md` already has.
 
 ## Claude Code integration
 
@@ -337,7 +337,7 @@ Then add it to your Claude Code settings (`~/.claude/settings.json`):
 }
 ```
 
-Every new session starts with the project's metadata, downstream dependents, and recent git commits already in context. The `claude` agent flag tells `briefing()` to skip Claude Code memory (which Claude Code autoloads separately).
+Every new session starts with the project's metadata, downstream dependents, and recent git commits already in context. The `claude` agent flag tells `briefing()` to skip Claude Code memory (which Claude Code autoloads separately). A project `AGENTS.md` is included too, minus any sections `CLAUDE.md` already has.
 
 ## Shared instructions across existing integrations
 
@@ -361,6 +361,18 @@ package tarballs. On platforms without symlink support, an explicit maintained
 copy or tested native import needs drift checks. Do not assume every consumer
 understands Claude's import syntax. Corteza reads shared/project sources via
 saber; its existing runtime and workspace layers remain consumer-owned.
+
+A project with only one of the two names still reaches both agents through
+the hook (saber 0.7.2.7+): given an agent name, it emits the project file
+that agent does not load natively, `CLAUDE.md` for Codex and `AGENTS.md` for
+Claude Code. Heading-delimited sections the agent already has from its native
+file are left out: an alias or an identical copy emits nothing, and a drifted
+copy emits only the sections that differ. The comparison is verbatim, so two
+files that state the same rules in different words are both read in full;
+merge those into one file. A `CLAUDE.md` that imports `@AGENTS.md`, or a
+Codex `project_doc_fallback_filenames` entry naming `CLAUDE.md`, still
+duplicates text, because the client expands it after the hook runs. Run
+without an agent name, the hook emits no project file.
 
 The hook commands above are POSIX-shell examples. They resolve the installed
 script at launch rather than pinning an R-version-specific library directory.
