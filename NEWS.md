@@ -1,3 +1,22 @@
+# saber 0.7.2.7 (development)
+
+- The session-start script now emits the project instruction file the named
+  agent does not load natively: `CLAUDE.md` for Codex, `AGENTS.md` for Claude
+  Code, and `CLAUDE.md` (else `AGENTS.md`) for corteza. Since 0.7.1 the script
+  had passed `include_project = FALSE`, so a project with only one of the two
+  names reached only one agent. Invocations without an agent name are
+  unchanged.
+- `agent_context()` now merges project `CLAUDE.md` and `AGENTS.md` instead of
+  picking one. The file the consumer autoloads is still left out, and so is
+  any heading-delimited section whose text the consumer already holds.
+  Identical copies add nothing, and a drifted copy adds only the sections
+  that differ, under a `(sections not already loaded)` heading. Behavior
+  change: corteza, unknown consumers, and `include_project = TRUE` used to
+  receive `CLAUDE.md` alone when both files existed; they now also receive
+  the sections only `AGENTS.md` has. A single project file is returned as
+  before. The comparison is verbatim, so differently worded files are both
+  loaded in full.
+
 # saber 0.7.2.6 (development)
 
 - Add the `agent-hygiene` skill under `inst/skills/agent-hygiene/`: the

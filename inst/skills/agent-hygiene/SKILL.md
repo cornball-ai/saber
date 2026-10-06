@@ -94,6 +94,9 @@ AgentRoots: ~/.claude/skills, ~/.agents/skills
 - Commit hub symlinks; they are absolute and machine-specific.
 - Restate shared policy inside a project instruction file. Content dedup
   only catches byte-identical text; topical duplication needs an edit.
+- Leave a project with an AGENTS.md and a CLAUDE.md that say the same things
+  in different words. Merge them into one file, have the user review the
+  merged text, then link the other name to it.
 - Point a corteza older than 0.7.1.47 at the hub; it refuses links that
   escape a root, as `skill_manifest()` still does. List each package's
   `inst/skills` directory for those versions.

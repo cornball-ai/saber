@@ -4,6 +4,9 @@
 #
 # Usage: Rscript session-start.R [agent]
 #   agent: "claude", "codex", or omit for interactive default
+# A named agent also receives the project instruction file it does not load
+# natively: CLAUDE.md for Codex, AGENTS.md for Claude Code, minus the sections
+# its native file already has. Without an agent, project files are not emitted.
 # Optional trailing --native-shared skips shared preferences only when the
 # consumer's native global entrypoint resolves to the same readable file.
 # Without the flag, historical injection behavior is unchanged.
@@ -107,10 +110,13 @@ load_saber_fun <- function(name, repo_root = NULL) {
     stop("saber not available")
 }
 
-load_agent_memory <- function(agent, project_dir, repo_root = NULL) {
+load_agent_context <- function(agent, project_dir, repo_root = NULL) {
     context_fun <- load_saber_fun("agent_context", repo_root)
+    # NULL defers to agent_context(), which picks the project file the named
+    # agent does not autoload. Native coverage is unknown without an agent.
+    include_project <- if (is.null(agent)) FALSE else NULL
     context_fun(agent = agent, project_dir = project_dir,
-                include_project = FALSE,
+                include_project = include_project,
                 include_global = FALSE,
                 include_soul = FALSE)
 }
@@ -177,11 +183,11 @@ if (is.null(briefing_text) || nchar(briefing_text) == 0L) {
                             "\n_No briefing available._\n")
 }
 
-memory_text <- tryCatch(
-    load_agent_memory(agent, project_dir, repo_root),
+agent_text <- tryCatch(
+    load_agent_context(agent, project_dir, repo_root),
     error = function(e) NULL
 )
-briefing_text <- append_context(briefing_text, memory_text)
+briefing_text <- append_context(briefing_text, agent_text)
 
 global_preferences <- load_global_preferences()
 native_shared <- "--native-shared" %in% cli_args &&

@@ -72,11 +72,13 @@ result <- ac("codex")
 expect_true(grepl("CLAUDE.md", result))
 expect_true(grepl("Claude project rules", result))
 
-# --- Both files exist, corteza prefers CLAUDE.md ---
+# --- Both files exist and differ, corteza receives both, CLAUDE.md first ---
 write_lines_to(file.path(project_dir, "AGENTS.md"), "Agents version.")
 result <- ac("corteza")
 expect_true(grepl("Claude project rules", result))
-expect_false(grepl("Agents version", result))
+expect_true(grepl("Agents version", result))
+expect_true(regexpr("## CLAUDE.md", result, fixed = TRUE) <
+            regexpr("## AGENTS.md", result, fixed = TRUE))
 
 # --- Memory loading ---
 write_lines_to(file.path(mem_proj_dir, "MEMORY.md"),
@@ -172,6 +174,64 @@ result <- ac("claude")
 # AGENTS.md is a symlink to CLAUDE.md, and claude autoloads CLAUDE.md,
 # so AGENTS.md should also be skipped (same canonical file)
 expect_false(grepl("Claude project rules", result))
+
+# --- Project merge: sections the agent already holds are not repeated ---
+merge_dir <- file.path(root, "mergepkg")
+dir.create(merge_dir)
+project_only <- function(agent, ...) {
+    saber::agent_context(agent = agent, project_dir = merge_dir,
+                         include_memory = FALSE, include_global = FALSE,
+                         include_soul = FALSE, ...)
+}
+count_of <- function(text, x) lengths(regmatches(x, gregexpr(text, x, fixed = TRUE)))
+shared <- c("# Demo", "", "Intro line.", "",
+            "## Build", "", "```bash", "# not a heading", "make", "```", "",
+            "## Style", "", "Use snake_case.")
+claude_md <- file.path(merge_dir, "CLAUDE.md")
+agents_md <- file.path(merge_dir, "AGENTS.md")
+
+# Identical copies: the autoloading agents get nothing, corteza gets one.
+write_lines_to(claude_md, shared)
+write_lines_to(agents_md, c(shared, ""))
+expect_equal(project_only("claude"), "")
+expect_equal(project_only("codex"), "")
+result <- project_only("corteza")
+expect_equal(count_of("Use snake_case.", result), 1L)
+expect_true(grepl("## CLAUDE.md", result, fixed = TRUE))
+expect_false(grepl("## AGENTS.md", result, fixed = TRUE))
+# One file is still emitted verbatim.
+expect_true(grepl(paste(shared, collapse = "\n"), result, fixed = TRUE))
+
+# A drifted copy: only the sections that differ are added.
+write_lines_to(agents_md, c(shared[1:11],
+                            "## Style", "", "Use snake_case and 4 spaces.", "",
+                            "## Release", "", "Tag after CRAN accepts."))
+result <- project_only("claude")
+expect_true(grepl("## AGENTS.md (sections not already loaded)", result,
+                  fixed = TRUE))
+expect_true(grepl("Use snake_case and 4 spaces.", result, fixed = TRUE))
+expect_true(grepl("Tag after CRAN accepts.", result, fixed = TRUE))
+expect_false(grepl("Intro line.", result, fixed = TRUE))
+# The fenced comment did not split the Build section, so it dropped whole.
+expect_false(grepl("make", result, fixed = TRUE))
+expect_false(grepl("# not a heading", result, fixed = TRUE))
+
+result <- project_only("codex")
+expect_true(grepl("## CLAUDE.md (sections not already loaded)", result,
+                  fixed = TRUE))
+expect_true(grepl("Use snake_case.", result, fixed = TRUE))
+expect_false(grepl("Tag after CRAN accepts.", result, fixed = TRUE))
+expect_false(grepl("Intro line.", result, fixed = TRUE))
+
+# corteza and a forced include get the union once.
+for (result in list(project_only("corteza"),
+                    project_only("claude", include_project = TRUE))) {
+    expect_equal(count_of("Intro line.", result), 1L)
+    expect_equal(count_of("make", result), 1L)
+    expect_true(grepl("Use snake_case.", result, fixed = TRUE))
+    expect_true(grepl("Use snake_case and 4 spaces.", result, fixed = TRUE))
+    expect_true(grepl("Tag after CRAN accepts.", result, fixed = TRUE))
+}
 
 # --- Cleanup ---
 unlink(root, recursive = TRUE)

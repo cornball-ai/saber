@@ -18,20 +18,37 @@ How each consumer avoids loading a file twice:
 - **Claude Code and Codex** load their native files themselves. The saber
   SessionStart hook (`session-start.R <agent> --native-shared`) compares the
   agent's native global file against the shared path with `normalizePath()`
-  and skips the shared text when they are the same file. The hook never emits
-  project files.
+  and skips the shared text when they are the same file. For project files
+  the hook emits the one the named agent does not load natively: `CLAUDE.md`
+  for Codex, `AGENTS.md` for Claude Code. A project with only one of the two
+  names is therefore delivered to both agents. Sections the agent already
+  has from its native file are left out, so an alias or an identical copy
+  emits nothing and a drifted copy emits only the sections that differ. Run
+  without an agent name, the hook emits no project file.
 - **corteza** has no native autoload. `saber::context_manifest()` discovers
   the shared file, `AGENTS.md`, and `CLAUDE.md`, then drops any source whose
   canonical path matches an earlier one, and after that any source whose
   content hash and bytes match. With `AGENTS.md -> CLAUDE.md` the second
   project entry is excluded as `same_path`.
-- **`saber::agent_context()`** (older API, still used by the hook for memory)
-  picks the project file the agent does not autoload and checks `same_file()`
-  before adding the other name.
+- **`saber::agent_context()`** (older API, still used by the hook for memory
+  and project files) merges `CLAUDE.md` and `AGENTS.md`. It leaves out the
+  file the agent autoloads, splits the rest at markdown headings, and drops
+  each section whose text the agent already holds. A consumer with no
+  autoloaded file gets `CLAUDE.md` followed by the sections only `AGENTS.md`
+  has.
 
-Content dedup catches byte-identical text only. A project file that restates
-shared policy in different words is loaded in full. Fix that by editing the
-project file, and keep project files to facts the shared file cannot know.
+Dedup is verbatim: whole files in `context_manifest()`, heading-delimited
+sections in `agent_context()`. A rule restated in different words is loaded
+from both places. Two project files written independently share no verbatim
+sections, so every agent reads both in full. The fix for those is an edit:
+have the agent merge them into one file, review the result with the user, and
+link the other name to it. Keep project files to facts the shared file cannot
+know.
+
+Two setups still make Claude Code or Codex read project text twice, because
+the client expands them after the hook runs: a `CLAUDE.md` that imports
+`@AGENTS.md`, and a Codex `project_doc_fallback_filenames` entry naming
+`CLAUDE.md`. The symlink avoids both.
 
 ## Skills
 

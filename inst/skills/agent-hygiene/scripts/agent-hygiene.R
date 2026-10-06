@@ -349,7 +349,7 @@ hygiene_audit <- function(manifest, project_dir = getwd(), quiet = FALSE) {
         } else if (p$same_content) {
             findings <- c(findings, "Project AGENTS.md and CLAUDE.md are separate files with identical content; link one to the other so they cannot drift.")
         } else {
-            findings <- c(findings, "Project AGENTS.md and CLAUDE.md differ; corteza loads both, Claude Code and Codex each load their own.")
+            findings <- c(findings, "Project AGENTS.md and CLAUDE.md differ; every agent reads both, minus sections that match verbatim. Merge them into one file and link the other name.")
         }
     } else {
         hygiene_say(quiet, sprintf("  project: AGENTS.md %s, CLAUDE.md %s",
