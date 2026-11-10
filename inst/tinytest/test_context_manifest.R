@@ -13,6 +13,13 @@ manifest <- function(sources = list(), ...) {
                      extra_sources = sources, ...)
 }
 row <- function(m, id) m$sources[match(id, m$sources$id), ]
+# Sources are read byte for byte, so fixtures state their line ending
+# instead of taking the platform's (CRLF on Windows).
+write_lf <- function(text, path) {
+    con <- file(path, "wb")
+    on.exit(close(con))
+    writeLines(text, con, sep = "\n")
+}
 
 m <- manifest()
 expect_identical(context_render(m), "")
@@ -44,7 +51,7 @@ expect_true("same_content" %in% context_audit(m)$findings$code)
 
 first <- file.path(root, "first.md")
 copy <- file.path(root, "copy.md")
-writeLines("private text", first)
+write_lf("private text", first)
 file.copy(first, copy)
 m <- manifest(list(source_file("a", first), source_file("b", copy)))
 expect_identical(row(m, "b")$reason, "same_content")
@@ -201,11 +208,11 @@ claude <- file.path(root, "CLAUDE.md")
 shared <- file.path(root, "GLOBAL.md")
 workspace <- file.path(root, "workspace")
 dir.create(workspace)
-writeLines("shared rules", shared)
-writeLines("project agents", agents)
-writeLines("project claude", claude)
-writeLines("workspace user", file.path(workspace, "USER.md"))
-writeLines("workspace identity", file.path(workspace, "SOUL.md"))
+write_lf("shared rules", shared)
+write_lf("project agents", agents)
+write_lf("project claude", claude)
+write_lf("workspace user", file.path(workspace, "USER.md"))
+write_lf("workspace identity", file.path(workspace, "SOUL.md"))
 discovered <- function(agent = "corteza", ...) {
     context_manifest(agent, root, shared_path = shared, workspace_dir = workspace, ...)
 }
