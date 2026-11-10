@@ -1,6 +1,5 @@
-#' @title Code intelligence: function call graph
-#' @description Render a project's internal function call graph as interactive
-#'   SVG.
+# Code intelligence: function call graph
+# Render a project's internal function call graph as interactive SVG.
 
 #' Render a function call graph for an R project
 #'
@@ -16,7 +15,7 @@
 #' @param cache_dir Directory for the underlying \code{\link{symbols}}
 #'   cache. Pass \code{tempdir()} (or any non-default path) when running
 #'   examples / tests to avoid writing to the user's persistent cache.
-#'   Name-only argument — must be passed by name.
+#'   Name-only argument; pass it by name.
 #' @return Character vector of SVG lines. Write with \code{writeLines()}.
 #' @examples
 #' d <- file.path(tempdir(), "fngdemo")

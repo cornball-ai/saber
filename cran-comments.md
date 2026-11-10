@@ -1,36 +1,43 @@
 ## Submission
 
-This is saber 0.7.2, a maintenance update to CRAN version 0.7.1,
-consolidating the 0.7.1.x development cycle.
+This is saber 0.8.0, a feature update to CRAN version 0.7.2, consolidating
+the 0.7.2.x development cycle.
 
-Changes since 0.7.1:
+Changes since 0.7.2:
 
-- `fn_graph()` gains a `cache_dir` argument so its example and tests write
-  under `tempdir()` instead of the user cache (#32).
-- `briefing_git()` no longer emits a `system2()` "status 128" warning when
-  run against a non-repository (#33).
-- The SessionStart hook only sources a local package's `R/` when that package
-  is saber itself (#31).
+- New exports: `context_manifest()`, `context_render()`, `context_audit()`,
+  `skill_manifest()`, `skill_read()`, `src_symbols()`,
+  `default_src_exclude()`, `heartbeat()`, `git_commit_count_since()`, and
+  `git_log_since()`.
+- `blast_radius()` gains `include = "src"`.
+- `agent_context()` now merges project 'CLAUDE.md' and 'AGENTS.md' when both
+  exist instead of returning one of them.
+- No exported function was removed or renamed, and no existing signature
+  changed. Depends and Imports are unchanged.
 
-This update resolves the NOTE in the CRAN additional `--run-donttest` checks
-(<https://www.stats.ox.ac.uk/pub/bdr/donttest/saber.out>), where the
-`fn_graph()` example left a cache file under `~/.cache/R/saber`. The
-`fn_graph()`, `symbols()`, `blast_radius()`, and `briefing()` examples and
-tests now direct their caches to `tempdir()`, so checks no longer write
-outside the session temporary directory.
+`src_symbols()` uses the suggested package 'bonsaisitter' (on CRAN) and
+loads a tree-sitter grammar package per language when one is installed. Of
+those, 'treesitter.c' is on CRAN; the others are optional, are not declared
+in DESCRIPTION, and are looked up with `requireNamespace()` at run time. The
+function stops with an informative error when a grammar is absent, and its
+example and tests skip in that case.
+
+Examples and tests write only under `tempdir()`. The test runner also
+redirects `R_USER_CACHE_DIR`, `R_USER_DATA_DIR`, and `R_USER_CONFIG_DIR` to
+temporary paths.
 
 ## Test environments
 
-- local Ubuntu 24.04, R 4.6.0
-- win-builder, R-devel
+- local Ubuntu 24.04, R 4.6.1
+- win-builder, R-devel and R-release
 
 ## R CMD check results
 
-0 errors | 0 warnings | 0 notes (local Ubuntu, R 4.6.0).
+0 errors | 0 warnings | 0 notes (local Ubuntu, R 4.6.1,
+`--as-cran --run-donttest`).
 
 ## Downstream dependencies
 
-CRAN reverse dependency: corteza (Imports). corteza 0.6.9 R CMD checks cleanly
-against this saber 0.7.2 build (tests, examples, and vignettes all OK). The
-only warning is the incoming-feasibility "version already exists" artifact from
-re-checking the published tarball, which is unrelated to saber.
+CRAN reverse dependencies: corteza (Imports) and pensar. The CRAN source
+tarballs of corteza 0.7.1 and pensar 0.7.0 both pass R CMD check (Status: OK)
+against this saber 0.8.0 build.

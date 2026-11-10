@@ -180,7 +180,7 @@ Discover projects and their dependencies:
 ```r
 saber::projects()
 #>   package   title                  version  path            depends  imports
-#>   saber     Context Engineering    0.7.0    /home/troy/saber        ...
+#>   saber     Context Engineering    0.7.0    ~/saber                 ...
 
 saber::find_downstream("jsonlite")
 #>   [1] "chatterbox" "cornfab" "diffuseR" "llamaR" "llm.api"
@@ -211,7 +211,7 @@ writeLines(svg, "~/callgraph.svg")
 
 `blast_radius()` builds on `symbols()`. It finds internal callers, then scans `~/` for any project whose DESCRIPTION declares a dependency on the target package. Traces the call graph across all of them. With `include = c("r", "examples", "vignettes")` it also flags references in roxygen `@examples` blocks and vignette code chunks.
 
-`fn_graph()` and `pkg_graph()` render force-directed SVG graphs via a base R Fruchterman-Reingold simulation. No JavaScript — tooltips and links work via native SVG features.
+`fn_graph()` and `pkg_graph()` render force-directed SVG graphs via a base R Fruchterman-Reingold simulation. Tooltips and links use native SVG features, with no JavaScript.
 
 ## Codex integration
 
@@ -363,7 +363,7 @@ understands Claude's import syntax. Corteza reads shared/project sources via
 saber; its existing runtime and workspace layers remain consumer-owned.
 
 A project with only one of the two names still reaches both agents through
-the hook (saber 0.7.2.7+): given an agent name, it emits the project file
+the hook (saber 0.8.0+): given an agent name, it emits the project file
 that agent does not load natively, `CLAUDE.md` for Codex and `AGENTS.md` for
 Claude Code. Heading-delimited sections the agent already has from its native
 file are left out: an alias or an identical copy emits nothing, and a drifted
@@ -383,7 +383,7 @@ and approve them through its normal trust workflow.
 
 An empty `SessionStart` matcher covers all supported sources, including
 startup, resume, clear, and compact. Keep unrelated hooks intact. The optional
-trailing `--native-shared` flag (saber 0.7.2.4+) skips shared injection only if
+trailing `--native-shared` flag (saber 0.8.0+) skips shared injection only if
 the native global file and shared path resolve to the same readable file.
 Codex's nonempty `AGENTS.override.md` takes precedence in this check. A missing,
 distinct, or broken native path retains the shared injection. Without the flag,

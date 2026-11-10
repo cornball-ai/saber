@@ -13,10 +13,19 @@ local({
     expect_true(all(vapply(wanted, exists, logical(1), envir = helpers,
                            inherits = FALSE)))
     # Every representable JSON control character, plus quotes, slashes and UTF-8.
-    text <- paste0(intToUtf8(1:31), '"\\/', "\u00e9\U0001f642")
-    encoded <- helpers$context_json_string(text)
+    # R's parser decodes the ASCII part; it is not used on the non-ASCII
+    # part, where mixing \u escapes with a literal astral character in one
+    # string does not round-trip on Windows.
+    ascii <- paste0(intToUtf8(1:31), '"\\/')
+    encoded <- helpers$context_json_string(ascii)
     expect_false(any(utf8ToInt(encoded) < 32L))
-    expect_identical(eval(parse(text = encoded)), text)
+    expect_identical(eval(parse(text = encoded)), ascii)
+    utf8 <- "\u00e9\U0001f642"
+    expect_identical(helpers$context_json_string(utf8), paste0('"', utf8, '"'))
+    mixed <- helpers$context_json_string(paste0(ascii, utf8))
+    expect_false(any(utf8ToInt(mixed) < 32L))
+    expect_identical(mixed, paste0(substr(encoded, 1L, nchar(encoded) - 1L),
+                                   utf8, '"'))
     expect_identical(helpers$context_json_string(""), '""')
     expect_identical(helpers$context_json_string("line\n\ttab\rend"),
                      '"line\\n\\ttab\\rend"')

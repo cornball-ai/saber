@@ -3,9 +3,13 @@
 \alias{heartbeat}
 \title{Summarize recent git activity across projects}
 \usage{
-heartbeat(days = 7L, scan_dir = path.expand("~"), n = 5L,
-          exclude = default_exclude(),
-          briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"))
+heartbeat(
+  days = 7L,
+  scan_dir = path.expand("~"),
+  n = 5L,
+  exclude = default_exclude(),
+  briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs")
+)
 }
 \arguments{
 \item{days}{Integer. Lookback window in days.}

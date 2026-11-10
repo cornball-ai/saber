@@ -3,8 +3,12 @@
 \alias{pkg_graph}
 \title{Render a package-level dependency graph}
 \usage{
-pkg_graph(scan_dir = path.expand("~"), packages = NULL,
-          include_suggests = FALSE, ...)
+pkg_graph(
+  scan_dir = path.expand("~"),
+  packages = NULL,
+  include_suggests = FALSE,
+  ...
+)
 }
 \arguments{
 \item{scan_dir}{Directory to scan for project directories.}

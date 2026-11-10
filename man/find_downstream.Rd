@@ -3,8 +3,11 @@
 \alias{find_downstream}
 \title{Find projects that depend on a given package}
 \usage{
-find_downstream(package, scan_dir = path.expand("~"),
-                exclude = default_exclude())
+find_downstream(
+  package,
+  scan_dir = path.expand("~"),
+  exclude = default_exclude()
+)
 }
 \arguments{
 \item{package}{Character. Package name to search for.}

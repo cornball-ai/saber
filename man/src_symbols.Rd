@@ -3,9 +3,12 @@
 \alias{src_symbols}
 \title{Build a symbol index for a project's non-R sources}
 \usage{
-src_symbols(project_dir, langs = c("c", "cpp", "python", "rust", "javascript"),
-            exclude = default_src_exclude(),
-            cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
+src_symbols(
+  project_dir,
+  langs = c("c", "cpp", "python", "rust", "javascript"),
+  exclude = default_src_exclude(),
+  cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")
+)
 }
 \arguments{
 \item{project_dir}{Path to the project directory.}

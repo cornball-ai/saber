@@ -1,6 +1,6 @@
-#' @title Code intelligence: AST symbol index
-#' @description Parse R source files into structured function definitions and
-#'   call relationships.
+# Code intelligence: AST symbol index
+# Parse R source files into structured function definitions and
+# call relationships.
 
 #' Build a symbol index for a project
 #'

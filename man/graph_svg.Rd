@@ -3,8 +3,14 @@
 \alias{graph_svg}
 \title{Render a graph as static SVG}
 \usage{
-graph_svg(edges, nodes = NULL, width = 1200L, height = 900L, iterations = 50L,
-          seed = 1L)
+graph_svg(
+  edges,
+  nodes = NULL,
+  width = 1200L,
+  height = 900L,
+  iterations = 50L,
+  seed = 1L
+)
 }
 \arguments{
 \item{edges}{Data frame with \code{from} and \code{to} columns

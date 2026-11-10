@@ -1,5 +1,5 @@
-#' @title Project briefings
-#' @description Generate project context for AI coding agents.
+# Project briefings
+# Generate project context for AI coding agents.
 
 #' Generate a project briefing
 #'

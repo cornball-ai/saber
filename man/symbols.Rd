@@ -3,8 +3,10 @@
 \alias{symbols}
 \title{Build a symbol index for a project}
 \usage{
-symbols(project_dir,
-        cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
+symbols(
+  project_dir,
+  cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")
+)
 }
 \arguments{
 \item{project_dir}{Path to the project directory.}

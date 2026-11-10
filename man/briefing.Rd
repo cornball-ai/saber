@@ -3,8 +3,11 @@
 \alias{briefing}
 \title{Generate a project briefing}
 \usage{
-briefing(project = NULL, scan_dir = path.expand("~"),
-         briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs"))
+briefing(
+  project = NULL,
+  scan_dir = path.expand("~"),
+  briefs_dir = file.path(tools::R_user_dir("saber", "cache"), "briefs")
+)
 }
 \arguments{
 \item{project}{Project name. If NULL, inferred from the current working

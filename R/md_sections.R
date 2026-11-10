@@ -1,6 +1,6 @@
-#' @title Markdown section comparison
-#' @description Split instruction files into heading-delimited sections so
-#'   text an agent already holds is not loaded a second time.
+# Markdown section comparison
+# Split instruction files into heading-delimited sections so
+# text an agent already holds is not loaded a second time.
 
 #' Split markdown lines into heading-delimited sections
 #'

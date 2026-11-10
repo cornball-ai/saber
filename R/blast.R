@@ -1,5 +1,5 @@
-#' @title Blast radius analysis
-#' @description Find all callers of a function across projects.
+# Blast radius analysis
+# Find all callers of a function across projects.
 
 #' Find callers of a function across projects
 #'

@@ -3,12 +3,18 @@
 \alias{agent_context}
 \title{Load context files for an AI coding agent}
 \usage{
-agent_context(agent = NULL, project_dir = getwd(), workspace_dir = NULL,
-              memory_base = file.path(path.expand("~"), ".claude", "projects"),
-              claude_global_path = file.path(path.expand("~"), ".claude", "CLAUDE.md"),
-              include_memory = NULL, include_project = NULL,
-              include_global = NULL, include_soul = NULL,
-              max_memory_lines = 100L)
+agent_context(
+  agent = NULL,
+  project_dir = getwd(),
+  workspace_dir = NULL,
+  memory_base = file.path(path.expand("~"), ".claude", "projects"),
+  claude_global_path = file.path(path.expand("~"), ".claude", "CLAUDE.md"),
+  include_memory = NULL,
+  include_project = NULL,
+  include_global = NULL,
+  include_soul = NULL,
+  max_memory_lines = 100L
+)
 }
 \arguments{
 \item{agent}{Consumer identifier: \code{"claude"}, \code{"codex"},

@@ -3,9 +3,14 @@
 \alias{blast_radius}
 \title{Find callers of a function across projects}
 \usage{
-blast_radius(fn, project = NULL, include = "r", scan_dir = path.expand("~"),
-             cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
-             exclude = default_exclude())
+blast_radius(
+  fn,
+  project = NULL,
+  include = "r",
+  scan_dir = path.expand("~"),
+  cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"),
+  exclude = default_exclude()
+)
 }
 \arguments{
 \item{fn}{Character. Function name to search for.}
