@@ -63,7 +63,7 @@ already autoloads.
 `skill_manifest()` discovers package-owned skills from installed libraries
 and explicitly supplied checkouts, plus named personal roots. Inspect its
 selected metadata and diagnostics; it does not register skills or tools.
-These APIs are new in saber 0.7.2.5; check the loaded exports before using them
+These APIs are new in saber 0.8.0; check the loaded exports before using them
 with an older installation or arrange an isolated development build.
 Use `skill_read(manifest, id, resource)` for exact instruction/reference text.
 Do not bypass a drift error by reading an unverified replacement path.
