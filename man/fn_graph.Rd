@@ -18,7 +18,7 @@ functions called from other packages. Default \code{FALSE}.}
 \item{cache_dir}{Directory for the underlying \code{\link{symbols}}
 cache. Pass \code{tempdir()} (or any non-default path) when running
 examples / tests to avoid writing to the user's persistent cache.
-Name-only argument — must be passed by name.}
+Name-only argument; pass it by name.}
 }
 \value{
 Character vector of SVG lines. Write with \code{writeLines()}.

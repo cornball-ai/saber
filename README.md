@@ -180,7 +180,7 @@ Discover projects and their dependencies:
 ```r
 saber::projects()
 #>   package   title                  version  path            depends  imports
-#>   saber     Context Engineering    0.7.0    /home/troy/saber        ...
+#>   saber     Context Engineering    0.7.0    ~/saber                 ...
 
 saber::find_downstream("jsonlite")
 #>   [1] "chatterbox" "cornfab" "diffuseR" "llamaR" "llm.api"
@@ -211,7 +211,7 @@ writeLines(svg, "~/callgraph.svg")
 
 `blast_radius()` builds on `symbols()`. It finds internal callers, then scans `~/` for any project whose DESCRIPTION declares a dependency on the target package. Traces the call graph across all of them. With `include = c("r", "examples", "vignettes")` it also flags references in roxygen `@examples` blocks and vignette code chunks.
 
-`fn_graph()` and `pkg_graph()` render force-directed SVG graphs via a base R Fruchterman-Reingold simulation. No JavaScript — tooltips and links work via native SVG features.
+`fn_graph()` and `pkg_graph()` render force-directed SVG graphs via a base R Fruchterman-Reingold simulation. Tooltips and links use native SVG features, with no JavaScript.
 
 ## Codex integration
 
