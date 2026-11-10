@@ -3,7 +3,12 @@
 \alias{git_log_since}
 \title{List recent commits in a repository}
 \usage{
-git_log_since(repo_dir, since_date = NULL, n = 5L, format = c("oneline", "iso"))
+git_log_since(
+  repo_dir,
+  since_date = NULL,
+  n = 5L,
+  format = c("oneline", "iso")
+)
 }
 \arguments{
 \item{repo_dir}{Path to a repository.}

@@ -3,8 +3,12 @@
 \alias{fn_graph}
 \title{Render a function call graph for an R project}
 \usage{
-fn_graph(project_dir, include_external = FALSE, ...,
-         cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols"))
+fn_graph(
+  project_dir,
+  include_external = FALSE,
+  ...,
+  cache_dir = file.path(tools::R_user_dir("saber", "cache"), "symbols")
+)
 }
 \arguments{
 \item{project_dir}{Path to the project directory (an R package root).}
