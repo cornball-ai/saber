@@ -1,6 +1,5 @@
-#' @title Documentation scanning
-#' @description Scan roxygen \verb{@examples} blocks and vignette code for
-#'   function references.
+# Documentation scanning
+# Scan roxygen @examples blocks and vignette code for function references.
 
 #' Scan roxygen \verb{@examples} blocks for function calls
 #'

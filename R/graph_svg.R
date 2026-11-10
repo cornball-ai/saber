@@ -1,6 +1,6 @@
-#' @title Force-directed graph rendering
-#' @description Render a graph as static, interactive SVG using a base R
-#'   Fruchterman-Reingold force simulation.
+# Force-directed graph rendering
+# Render a graph as static, interactive SVG using a base R
+# Fruchterman-Reingold force simulation.
 
 #' Render a graph as static SVG
 #'

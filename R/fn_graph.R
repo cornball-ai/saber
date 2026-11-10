@@ -1,6 +1,5 @@
-#' @title Code intelligence: function call graph
-#' @description Render a project's internal function call graph as interactive
-#'   SVG.
+# Code intelligence: function call graph
+# Render a project's internal function call graph as interactive SVG.
 
 #' Render a function call graph for an R project
 #'

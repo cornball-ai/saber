@@ -1,6 +1,6 @@
-#' @title Agent context assembly
-#' @description Assemble context from memory, instructions, and identity files
-#'   for AI coding agents.
+# Agent context assembly
+# Assemble context from memory, instructions, and identity files
+# for AI coding agents.
 
 #' Load context files for an AI coding agent
 #'

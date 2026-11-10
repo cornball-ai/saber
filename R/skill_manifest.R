@@ -119,6 +119,9 @@ skill_inventory <- function(entries, diagnostics) {
 }
 
 #' @export
+#' @noRd
+#' @examples
+#' print(skill_manifest(packages = character(), lib.loc = character()))
 print.saber_skill_manifest <- function(x, ...) {
     cat(sprintf("Skill manifest: %d selected / %d candidates\n",
                 sum(x$entries$selected), nrow(x$entries)))

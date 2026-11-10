@@ -1,6 +1,5 @@
-#' @title Cross-project activity heartbeat
-#' @description Summarize recent git activity across every repository
-#'   under a directory.
+# Cross-project activity heartbeat
+# Summarize recent git activity across every repository under a directory.
 
 #' Summarize recent git activity across projects
 #'

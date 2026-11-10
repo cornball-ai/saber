@@ -1,6 +1,6 @@
-#' @title Code intelligence: multi-language symbol index
-#' @description Parse C, C++, Python, Rust, and JavaScript sources into
-#'   function definitions and call relationships via tree-sitter.
+# Code intelligence: multi-language symbol index
+# Parse C, C++, Python, Rust, and JavaScript sources into
+# function definitions and call relationships via tree-sitter.
 
 #' Build a symbol index for a project's non-R sources
 #'
